@@ -34,9 +34,7 @@ int rpo(u32 x) {
     }
 }
 
-int printc(char x) {
-    putchar(x);
-}
+int printc(char x) { putchar(x); }
 
 int prints(char *x) {
     for(int i = 0; x[i] != '\0'; i++)
