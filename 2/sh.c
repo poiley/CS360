@@ -1,34 +1,34 @@
 // Lab 2 - Benjamin Poile
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <errno.h>
-#include <fcntl.h>
+#include <stdio.h>      // printf(), fflush(), fgets(), stdout, stdin
+#include <stdlib.h>     // getenv(), exit()
+#include <string.h>     // memset(), strlen(), strtok(), strerror(), strcmp(), strcat(), strncpy()
+#include <unistd.h>     // close(), pipe(), dup(), getpid(), getcwd()
+#include <sys/wait.h>   // wait()
+#include <errno.h>      // errno
+#include <fcntl.h>      // open(), O_RDONLY, O_WRONLY, O_CREAT, O_APPEND
 
 int   ARGC = 0;
 char *ARGV [16]; 
 char  line [128]; 
 char  input[16][16]; 
 
-
-void generateArgv(char *destination[]) {
+/* Populates and returns an array of strings containing input from the user. */
+void generateArgv(char *argv[]) {
     int i;
     for(i = 0; input[i][0] != 0; i++)
-        destination[i] = input[i];
-    destination[i] = NULL; 
+        argv[i] = input[i];
+    argv[i] = NULL; 
 }
 
+/* Wipes the stored input from the user, so sh can be ready for the next command */
 void cleanup() {
     for (int i = 0; i < 16; i++) 
         memset(input[i], 0, strlen(input[i]));
     ARGC = 0; 
 }
 
+/* Tokenize (split) input from the user into parsable objects. */
 void tok(char src[]) {
     char *next = strtok(src, " "); 
 
@@ -38,6 +38,7 @@ void tok(char src[]) {
     }
 }
 
+/* Change the directory that the program is pointing to. By deault, Home. */
 int cd() {
     char *home;
     int success = -1;
@@ -48,6 +49,7 @@ int cd() {
     return chdir(input[1]); 
 }
 
+/* Redirection Handler. Opens the file with applicable permissions. */
 int redir(int direction, char file[]) {
     switch(direction) {
         case 1:
@@ -64,6 +66,7 @@ int redir(int direction, char file[]) {
     }
 }
 
+/* Redirection Specifier. Iterates through Argv, looks for indirection cases, and calls the Redirection Handler accordingly. */
 int isRedir(char *argv[]) {
     char temp[16];
     for(int i = 0; argv[i]; strncpy(temp, argv[i++], 16))
@@ -80,6 +83,7 @@ int isRedir(char *argv[]) {
     return -1;
 }
 
+/* Execution Handler. Handles and executes any command in the PATH, which for now is just /bin/ */
 int exec(char *argv[]){
     char path[16] = "/bin/"; 
 
@@ -92,6 +96,7 @@ int exec(char *argv[]){
         printf("%s\n", strerror(errno));
 }
 
+/* Pipe Handler: Combines data from piped commands. */
 void concatPipe(char *head[], char *tail[]) {
     int pd[2], pid;
     pipe(pd); 
@@ -115,6 +120,7 @@ void concatPipe(char *head[], char *tail[]) {
     }
 }
 
+/* Pipe Specifier. Iterates through Argv, looks for pipes, and calls the Pipe Handler accordingly. */
 int isPipe(char *head[], char *tail[]) {
     for(int i = 0; ARGV[i]; i++)
         if (strcmp(ARGV[i], "|") == 0) {
@@ -128,12 +134,15 @@ int isPipe(char *head[], char *tail[]) {
     return 0;
 }
 
+/* Function to handle the forking of child processes. */
 int forkC() {
     int pid = fork(), status;
 
     if (pid > 0) {
         printf("Parent %d is now waiting for child %d to die.\n", getpid(), pid);
+        
         pid = wait(&status);
+        
         printf("Dead Child = %d, By = %04x\n", pid, status);
     } else if (pid == 0) { 
         char *head[16], *tail[16];
@@ -148,6 +157,7 @@ int forkC() {
         printf("Unable to create process!\n");
 }
 
+/* Execution Specifier. Takes the information in Argv and calls commands accordingly. */
 void execCMD(){
     generateArgv(ARGV); 
 
@@ -166,20 +176,21 @@ void execCMD(){
         forkC();
 }
 
+/* Main function. Handles the running of the program in a loop */
 int main(int argc, char *argv[]) {
     char tempLine[128];
 
-    while (1) {
-        printf("$ "); 
-        fflush(stdout);
+    while (1) {                     // No exit condition, as program exit is handle in execCMD()
+        printf("$ ");               // PS1 Prompt
+        fflush(stdout);             // Flush
 
-        fgets(line, 128, stdin);
-        line[strlen(line) - 1] = 0; 
-        strcpy(tempLine, line);
-        tok(tempLine);  
+        fgets(line, 128, stdin);    // Read user input, write to line
+        line[strlen(line) - 1] = 0; // Format
+        strcpy(tempLine, line);     // Copy to temp value
+        tok(tempLine);              // Tokenize
 
-        execCMD();
-        cleanup();
+        execCMD();                  // Run user input
+        cleanup();                  // Clean up before next run.
     }
 
     return 0;
