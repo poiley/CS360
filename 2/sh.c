@@ -1,20 +1,44 @@
+// Lab 2 - Benjamin Poile
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <errno.h>
+#include <fcntl.h>
 
 int   ARGC = 0;
 char *ARGV [16]; 
 char  line [128]; 
 char  input[16][16]; 
 
-int cd(void) {
+
+void generateArgv(char *destination[]) {
+    int i;
+    for(i = 0; input[i][0] != 0; i++)
+        destination[i] = input[i];
+    destination[i] = NULL; 
+}
+
+void cleanup() {
+    for (int i = 0; i < 16; i++) 
+        memset(input[i], 0, strlen(input[i]));
+    ARGC = 0; 
+}
+
+void tok(char src[]) {
+    char *next = strtok(src, " "); 
+
+    for(int i = 0; next != 0; i++, ARGC++) {
+        strcpy(input[i], next);
+        next = strtok(NULL, " ");
+    }
+}
+
+int cd() {
     char *home;
     int success = -1;
 
@@ -24,89 +48,36 @@ int cd(void) {
     return chdir(input[1]); 
 }
 
-void generateArgv(char *destination[]) {
-    int i = 0; 
-    
-    while (input[i][0] != 0) 
-        destination[i] = input[i++];
-
-    destination[i] = NULL; 
-}
-
-void cleanup() {
-    ARGC = 0; 
-    for (int i = 0; i < 16; i++) 
-        memset(input[i], 0, strlen(input[i]));
-}
-
-int append(char *file) {
-    close(1); 
-    return open(file, O_WRONLY | O_APPEND, 0644);
-}
-
-int out(char *file) {
-    close(1); 
-    return open(file, O_WRONLY | O_CREAT, 0644);
-}
-
-int in(char *file) {
-    close(0); 
-    return open(file, O_RDONLY);
-}
-
-int redir(int direction, char filename[]) {
+int redir(int direction, char file[]) {
     switch(direction) {
         case 1:
-            return in(filename);
+            close(0);
+            return open(file, O_RDONLY);
         case 2:
-            return out(filename);
+            close(1);
+            return open(file, O_WRONLY | O_CREAT, 0644);
         case 3:
-            return append(filename);
+            close(1);
+            return open(file, O_WRONLY | O_APPEND, 0644);
         default:
             return 1;
     }
 }
 
 int isRedir(char *argv[]) {
-    int i = 0;
     char temp[16];
-
-    while (argv[i]) {
-        strncpy(temp, argv[i], 16);
-
+    for(int i = 0; argv[i]; strncpy(temp, argv[i++], 16))
         if (strcmp(temp, "<") == 0) { 
-            strncpy(temp, argv[++i], 16);
-            redir(1, temp);
-            return 1;
+            strncpy(temp, argv[i], 16);
+            return redir(1, temp);
         } else if (strcmp(temp, ">") == 0) { 
-            strncpy(temp, argv[++i], 16);
-            redir(2, temp);
-            return 2;
+            strncpy(temp, argv[i], 16);
+            return redir(2, temp);
         } else if (strcmp(temp, ">>") == 0) { 
-            strncpy(temp, argv[++i], 16);
-            redir(3, temp);
-            return 3;
+            strncpy(temp, argv[i], 16);
+            return redir(3, temp);
         }
-    }
     return -1;
-}
-
-
-int isPipe(char *head[], char *tail[]) {
-    int i = 0;
-    while (ARGV[i])
-        if (strcmp(ARGV[i++], "|") == 0) { 
-            int j = 0;
-            while (ARGV[j])
-                if (j < i) 
-                    head[j] = ARGV[j];
-                else if (j > i) 
-                    tail[j - 3] = ARGV[j++];
-
-            return 1;
-        }
-
-    return 0;
 }
 
 int exec(char *argv[]){
@@ -144,11 +115,24 @@ void concatPipe(char *head[], char *tail[]) {
     }
 }
 
+int isPipe(char *head[], char *tail[]) {
+    for(int i = 0; ARGV[i]; i++)
+        if (strcmp(ARGV[i], "|") == 0) {
+            for(int j = 0; ARGV[j]; j++)
+                if (j < i)
+                    head[j] = ARGV[j];
+                else if (j > i)
+                    tail[j - 3] = ARGV[j];
+            return 1;
+        }
+    return 0;
+}
+
 int forkC() {
     int pid = fork(), status;
 
-    if (pid > 0) { 
-        printf("Parent %d is not waiting for child %d to die.\n", getpid(), pid);
+    if (pid > 0) {
+        printf("Parent %d is now waiting for child %d to die.\n", getpid(), pid);
         pid = wait(&status);
         printf("Dead Child = %d, By = %04x\n", pid, status);
     } else if (pid == 0) { 
@@ -164,7 +148,7 @@ int forkC() {
         printf("Unable to create process!\n");
 }
 
-void execCMD(void){
+void execCMD(){
     generateArgv(ARGV); 
 
     if (strcmp(input[0], "exit") == 0) 
@@ -177,23 +161,12 @@ void execCMD(void){
 
         char cwd[256];
         getcwd(cwd, sizeof(cwd));
-        printf("cwd is: %s\n", cwd);
+        printf("CWD ~> %s\n", cwd);
     } else
         forkC();
 }
 
-void tok(char src[]) {
-    int i = 0;
-    char *next = strtok(src, " "); 
-
-    while (next != 0) { 
-        strcpy(input[i++], next);
-        next = strtok(NULL, " ");
-        ARGC++;
-    }
-}
-
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[]) {
     char tempLine[128];
 
     while (1) {
