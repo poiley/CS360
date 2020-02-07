@@ -81,8 +81,7 @@ int isRedir(char *argv[]) {
 
 /* Execution Handler. Handles and executes any command in the PATH, which for now is just /bin/ */
 int exec(char *argv[]){
-    char path[16] = "/bin/"; 
-
+    char path[16] = "/bin/";
     strcat(path, argv[0]);  
 
     if (isRedir(argv) != -1) 
@@ -92,7 +91,7 @@ int exec(char *argv[]){
         printf("%s\n", strerror(errno));
 }
 
-/* Pipe Handler: Combines data from piped commands. */
+/* Pipe Handler: Pipes commands and combines data. */
 void concatPipe(char *head[], char *tail[]) {
     int pd[2], pid;
     pipe(pd); 
