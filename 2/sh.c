@@ -151,29 +151,29 @@ int forkC() {
         printf("[LOG] Unable to create process!\n");    // Report Error.
 }
 
-/* Function that gets the CWD and returns it as a *char */
-char *cwd() {
-    char cwd[256], *cwdout = (char *) malloc(sizeof(cwd));
-    getcwd(cwd, sizeof(cwd));   // Get current working directory
-    strcpy(cwdout, cwd);        // Copy the string
-    return cwdout;              // Return
-}
-
 /* Execution Specifier. Takes the information in Argv and calls commands accordingly. */
 void execCMD(){
     generateArgv(ARGV);                      // Populate global Argv.
 
-    if (strcmp(input[0], "cd") == 0) {       // Check if the user has entered cd, which is a special case.
-        if (cd() == 0)                       // Default: cd to Home directory if cd directory isn't specified.
+    if (strcmp(input[0], "exit") == 0)      // If the has entered the exit command...
+        exit(1);                            // and stop the program.
+    else if (strcmp(input[0], "cd") == 0) { // Otherwise, check if the user has entered cd, which is a special case.
+        if (cd() == 0)                      // By default: cd to Home directory if cd directory isn't specified.
             printf("[LOG] cd to %s was a Success.\n", (strcmp(input[1], "\0") == 0) ? "$HOME" : input[1]);
         else
-            printf("[LOG] cd to %s was a Failure.\n", input[1]);
+            printf("[LOG] cd to %s was a Failure.\n", input[1]); // Else, output the current working directory.
 
-        printf("[LOG] CWD ~> %s\n", cwd());   // Output the current working directory.
-    } else if (strcmp(input[0], "exit") == 0) // Otherwise, if the has entered the exit command...
-        exit(1);                              // Stop the program.
-    else
-        forkC();                              // Execute the child command
+        char cwd[256];
+        getcwd(cwd, sizeof(cwd));
+        printf("[LOG] CWD ~> %s\n", cwd);
+    } else
+        forkC();                            // Execute the child command
+}
+
+/* EXTRA: Function that gets the CWD and returns it as a *char */
+char *cwd() {
+    char buf[256];                      // Initialize buffer character array.
+    return getcwd(buf, sizeof(buf));    // Get current working directory and return it.
 }
 
 /* Main function. Handles the running of the program in a loop */
