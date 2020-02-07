@@ -40,12 +40,8 @@ void tok(char src[]) {
 
 /* Change the directory that the program is pointing to. By deault, Home. */
 int cd() {
-    char *home;
-    int success = -1;
-
     if (strcmp(input[1], "\0") == 0)
         return chdir(getenv("HOME"));
-
     return chdir(input[1]); 
 }
 
