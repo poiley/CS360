@@ -1,0 +1,7 @@
+              CS360 LAB #2: DUE 2-6-2020
+   
+            Demo required. Turn in a hard copy
+
+                   Requirements:
+
+Programming project: sh Simulator of Chapter 3.11 in textbook

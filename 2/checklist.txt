@@ -1,0 +1,24 @@
+                   LAB2 Check List
+
+Use YOUR C program source file in the tests.
+
+// Simple commands
+ls -a -l                       : show the ls results of CWD
+cat file                       : show file contents
+
+// Choose gedit OR nano OR vi OR emacs as the EDITOR
+EDITOR file                    : show you can edit the file
+
+// I/O redirections		   
+cat file > out; ls -l; cat out : show out file exist and show its contents
+cat file >> out; ls -l         : show out file size doubled
+cat < file                     : show file contents
+
+// PIPES
+cat file | grep printf         : show lines containing printf
+
+cat < file | grep printf > out : show pipe with I/O redirection
+
+cat file | grep printf | more  : two pipes
+      
+cat file | cat | cat | grep printf : multiple pipes
