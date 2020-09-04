@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 void myprintf(char *fmt, ...);
 
 typedef unsigned int u32;
@@ -36,9 +32,7 @@ Purpose:    Prints Strings
 */
 char *prints(char *s) {
     for (int i = 0; s[i] != '\0'; i++)
-    {
         putchar(s[i]);
-    }
 }
 
 /*
@@ -81,9 +75,9 @@ void myprintf(char *fmt, ...) {
     int *ip = (int *) &fmt + 1;
 
     while (*cp) {
-        if (*cp != '%') {
+        if (*cp != '%')
             putchar(*cp);
-        } else {         
+        else
             switch (*(cp + 1)) {
                 case 'c':
                     putchar((char) *ip++);
@@ -113,7 +107,6 @@ void myprintf(char *fmt, ...) {
                     putchar(*fmt);
                     break;
             }
-        }
         cp++;
     }
 }
