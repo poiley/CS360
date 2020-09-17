@@ -1,8 +1,0 @@
-D /root
-F /root/foo.txt
-F /root/bar.txt
-D /root/new
-F /root/new/minecraft.docx
-D /root/folder
-D /bin
-D /usr
