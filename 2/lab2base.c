@@ -66,7 +66,16 @@ int mkdir(char *pathname) {
 	NODE *p, *q;
 	printf("mkdir: name=%s\n", pathname);
 
-	// write YOUR code to not allow mkdir of /, ., ./, .., or ../
+	// Do not allow mkdir of /, ., ./, .., or ../
+	switch(pathname) {
+		case "/":
+		case ".":
+		case "./":
+		case "..":
+		case "../":
+			printf("name %s is invalid. mkdir FAILED\n". pathname);
+			return -1;
+	}
 
 	if (pathname[0] == '/')
 		start = root;
@@ -104,6 +113,20 @@ int ls(char *pathname) {
 	printf("\n");
 }
 
+int cd(char *pathname) {}
+
+int pwd() {}
+
+int creat(char *pathname) {}
+
+int rm(char *pathname) {}
+
+int reload(char *pathname) {}
+
+int save() {}
+
+int menu() {}
+
 int quit() {
 	printf("Program exit\n");
 	exit(0);
@@ -139,7 +162,7 @@ int main() {
 		sscanf(line, "%s %s", command, pathname);
 		printf("command=%s pathname=%s\n", command, pathname);
 		
-		if (command[0]==0) 
+		if (command[0] == 0) 
 			continue;
 
 		index = findCmd(command);
@@ -149,46 +172,59 @@ int main() {
 			case 1: rmdir(pathname);   	break;
 			case 2: ls(pathname);		break;
 			case 3: cd(pathname);		break;
-			case 4: pwd();				break;
+			case 4: pwd();			break;
 			case 5: creat(pathname);	break;
 			case 6: rm(pathname);		break;
 			case 7: reload(pathname);	break;
-			case 8: save();				break;
-			case 9: menu();				break;
-			case 10:quit();				break;
+			case 8: save();			break;
+			case 9: menu();			break;
+			case 10:quit();			break;
 		}
   	}
 }
 
 
-/********************* YOU DO THE FOLLOWING *************************
+
 int tokenize(char *pathname) {
-   Divide pathname into token strings in gpath[128]
-   Let char * name[0], name[1], ..., name[n-1] point at token strings
-   Let n = number of token strings
-   // print out token strings to verify
+	// Pseudocode:
+	// Divide pathname into token strings in gpath[128]
+	// Let char * name[0], name[1], ..., name[n-1] point at token strings
+	// Let n = number of token strings
+	// print out token strings to verify
+
+	char *s;
+	s = strtok(pathname, "/"); // first call to strtok
+
+	while(s) {
+		printf("%s ", s);
+		s = strtok(0, "/"); // call strtok() until it returns NULL
+	}
+
 }
 
 NODE *path2node(char *pathname) {
    // return pointer to the node of pathname, or NULL if invalid
-   if (pathanme begins with /)
+   if (pathname[0] == "/")
 	  start = root;
    else
 	  start = cwd;
 
    tokenize(pathname);
    NODE *node = start;
-  
+
    for (int i=0; i<n; i++) {
-	   node = search_child(node, name[i]);
-	   if search fails, return NULL;
+	node = search_child(node, name[i]);
+	if (!node || node == 0)
+		return NULL;
    }
+
    return node;
 }
 
 int dir_base_name(char *pathname) {
-	divide pathname into dirname in bname[], basename in bname[]
+	char temp[128];
+	strcpy(temp, pathname);
+	strcpy(dname, dirname(temp));
+	strcpy(temp, pathname);
+	strcpy(bname, basename(temp));
 }
-	
-Write your pwd(), rmdir(), creat(), rm(), save(), reload() functions
-************************************************************************/
