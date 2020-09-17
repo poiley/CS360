@@ -111,6 +111,10 @@ void myprintf(char *fmt, ...) {
     }
 }
 
+/*
+Function:   testmyprintf
+Purpose:    To test the functionality of each portion of myprintf
+*/
 void testmyprintf() {
     myprintf("\nThis is my function to test myprintf\n");
     myprintf("This is the number %d\n", 42);

@@ -35,7 +35,7 @@ int main() {
 
 	read(fd, buf, sector_size); // read MBR into buf[]
 
-	printf("Device\t\tStart\t\tEnd\t\tSectors\t\tSize\t\tID\n"); // fdisk table header
+	printf("Device\t\tStart\t\tEnd\t\tSectors\t\t\tSize\t\tID\n"); // fdisk table header
 
 	p = (struct partition *) &buf[0x1be]; // p->P1
 
