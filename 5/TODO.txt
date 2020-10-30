@@ -1,0 +1,13 @@
+DONE
+client local commands lcd, lpwd, lmkdir, lrmdir, lrm, lcat, lls
+server commands pwd, ls, cd, pwd, mkdir, rmdir, rm, put
+set server to virtual root 
+
+TODO
+server(non local) command get
+implement server and client of seperate hosts (not just local host)
+
+IMPROVE
+lls includes . and .. directories in it's print out - may want to skip those?
+virtual root - if chroot fails on premission, allows to continue at true root, may want to change that to exit and make you run as sudo.
+may want to test put a little better
