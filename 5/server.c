@@ -30,7 +30,6 @@ char *t2 = "----------------";
 char gpath[MAX];
 char *cmd;
 char *pathname;
-char cbuf[1024];
 
 int server_init() {
 	printf("-----server init start -----\n");
@@ -208,23 +207,23 @@ int main() {
 
 					if (fd >= 0) { // successful
 						lstat(path, &mystat);
-						sprintf(cbuf, "%d", mystat.st_size);
-						write(csock, cbuf, sizeof(cbuf));         // Write the size to the client
-						bzero(cbuf, sizeof(cbuf)); cbuf[sizeof(cbuf) - 1] = '\0';
+						sprintf(buf, "%d", mystat.st_size);
+						write(csock, buf, sizeof(buf));         // Write the size to the client
+						bzero(buf, sizeof(buf)); buf[sizeof(buf) - 1] = '\0';
 
 						int bytes = 0;
-						while (n = read(fd, cbuf, sizeof(cbuf))) { // reading a line from the file
+						while (n = read(fd, buf, sizeof(buf))) { // reading a line from the file
 							if (n != 0) {
-								cbuf[sizeof(cbuf) - 1] = '\0';
+								buf[sizeof(buf) - 1] = '\0';
 
 								// Update bytes
 								bytes += n;
 								printf("wrote %d bytes\n", bytes);
 
 								// Write the contents to the server
-								write(csock, cbuf, sizeof(cbuf));
-								bzero(cbuf, sizeof(cbuf));
-								cbuf[sizeof(cbuf) - 1] = '\0';
+								write(csock, buf, sizeof(buf));
+								bzero(buf, sizeof(buf));
+								buf[sizeof(buf) - 1] = '\0';
 							}
 						} close(fd);
 					}
@@ -322,7 +321,7 @@ int main() {
 				case 5:
 					//mkdir
 					r = mkdir(pathname, 0755);
-					
+
 					if(r < 0)
 						strcpy(line, "mkdir failed");
 					else
