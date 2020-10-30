@@ -30,6 +30,7 @@ char *t2 = "----------------";
 char gpath[MAX];
 char *cmd;
 char *pathname;
+char cbuf[1024];
 
 int server_init() {
 	printf("-----server init start -----\n");
@@ -197,30 +198,65 @@ int main() {
 			switch(index){
 				case 0:
 					//get
+					printf("get: cmd %s, path %s\n", cmd, path);
+					/**
+					* Attempt to open the file
+					* (1) return file size if successful
+					* (2) else, return BAD
+					*/
+					int fd = open(path, O_RDONLY);
+
+					if (fd >= 0) { // successful
+						lstat(path, &mystat);
+						sprintf(cbuf, "%d", mystat.st_size);
+						write(csock, cbuf, sizeof(cbuf));         // Write the size to the client
+						bzero(cbuf, sizeof(cbuf)); cbuf[sizeof(cbuf) - 1] = '\0';
+
+						int bytes = 0;
+						while (n = read(fd, cbuf, sizeof(cbuf))) { // reading a line from the file
+							if (n != 0) {
+								cbuf[sizeof(cbuf) - 1] = '\0';
+
+								// Update bytes
+								bytes += n;
+								printf("wrote %d bytes\n", bytes);
+
+								// Write the contents to the server
+								write(csock, cbuf, sizeof(cbuf));
+								bzero(cbuf, sizeof(cbuf));
+								cbuf[sizeof(cbuf) - 1] = '\0';
+							}
+						} close(fd);
+					}
+					else {
+						write(csock, "BAD", sizeof("BAD"));
+					}
+
 					break;
 				case 1:
 					//put
 					//read number of blk sizes
 					n = read(csock, &size, 4);
-					if(size == 0){
+					if(size == 0) {
 						printf("No file contents to recieve\n");
 						strcpy(line, "No file contents to recieve\n");
-					}else{
+					} else {
 						//open file for write
 						gd = open(pathname, O_WRONLY|O_CREAT,0644);
-						if(gd < 0){
+						if(gd < 0) {
 							printf("Server: Cannot open file for writing\n");
 							strcpy(line, "Cannot open file for writing at server");
 						}
 						
-						while(total < size){
+						while(total < size) {
 							n = read(csock, buf, BLKSIZE); //reading even if file not open to clear line between client and server
 							total += n;
 							//put into file if file opened correctly
 							if(gd)
 								write(gd, buf, n);
 						}
-						if(gd){
+
+						if(gd) {
 							printf("Server: read %d bytes and put into file %s\n", total+4, pathname);
 							strcpy(line, "success");
 						}
