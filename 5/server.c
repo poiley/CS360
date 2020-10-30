@@ -88,14 +88,14 @@ int ls_file(char *fname) { //instead of printing fill up line
 		strcpy(line, "-");
 	if((sp->st_mode & 0xF000) == 0x4000) //if is dir
 		strcpy(line, "d");
-	if((sp->st_mode & 0xF000) == 0xA000) //if is lnk
+	if((sp->st_mode & 0xF000) == 0xA000) { //if is lnk
 		strcpy(line, "l");
 		
 		if(sp->st_mode & (1<<i)){ //print r|w|x
 			tempstr[0] = t1[i];
 			strcat(line, tempstr);
 		} else {
-			tempstr[0] =t 2[i];
+			tempstr[0] = t2[i];
 			strcat(line, tempstr); //or print -
 		}
 	}
@@ -111,7 +111,7 @@ int ls_file(char *fname) { //instead of printing fill up line
 
 	//print time
 	strcpy(ftime,ctime(&sp->st_ctime)); //calendar form
-	ftime[strlen(ftime)-1]=0; //kill newline char at end
+	ftime[strlen(ftime) - 1]=0; //kill newline char at end
 	strcat(line,ftime);
 
 	//print name

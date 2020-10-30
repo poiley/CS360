@@ -33,7 +33,7 @@ int client_init() {
 	if(sock < 0) {
 		printf("socket call failed\n");
 		exit(1);
-  }
+  	}
 
 	printf("fill ser_addr with servers IP and port#\n");
 	server_addr.sin_family= AF_INET;
