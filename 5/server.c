@@ -18,56 +18,53 @@
 #define BLKSIZE 4096
 
 struct sockaddr_in server_addr, client_addr;
-int mysock, csock;
-int r, len, n;
-char buf[MAX];
-char line[MAX];
+int sock, csock, r, len, n;
+
+char gpath[MAX], buf[MAX], line[MAX];
+char *cmd;
+char *pathname;
 
 struct stat mystat, *sp;
 char *t1 = "xwrxwrxwr-------";
 char *t2 = "----------------";
 
-char gpath[MAX];
-char *cmd;
-char *pathname;
 
 int server_init() {
-	printf("-----server init start -----\n");
+	printf("----- SERVER Initialization -----\n");
 	
-	printf("1.create socket\n");
-	mysock = socket(AF_INET, SOCK_STREAM, 0 );
-	if(mysock < 0) {
-		printf("Socket call failed\n");
+	printf("SERVER: Creating TCP socket.\n");
+	sock = socket(AF_INET, SOCK_STREAM, 0);
+	if(sock < 0) {
+		printf("** SERVER ERROR: Socket call failed in server_init()\n");
 		exit(1);
 	}
 
-	printf("Fill server_addr with host IP and port info\n");
+	printf("SERVER: Populating server_addr attributes in server_init()\n");
 	server_addr.sin_family = AF_INET; 
 	server_addr.sin_addr.s_addr = htonl(INADDR_ANY); 
 	server_addr.sin_port = htons(SERVER_PORT); 
 
-	printf("bind socket to server address\n");
-	r = bind(mysock, (struct sockaddr*)&server_addr, sizeof(server_addr));
+	printf("SERVER: Binding socket to server address.\n");
+	r = bind(sock, (struct sockaddr*) &server_addr, sizeof(server_addr));
 	if(r < 0) {
-		printf("Bind failed\n");
+		printf("** SERVER ERROR: Socket bind failed in server_init()\n");
 		exit(3);
 	}
-
-	printf("  hostname = %s   port = %d \n", SERVER_HOST, SERVER_PORT);
-
 	
 	getcwd(buf, MAX);
 	r = chroot(buf);
 	if(r < 0) {
-		printf("**error with chroot**\n");
+		printf("** SERVER ERROR: Command 'chroot': FAILED");
 		if(errno == EPERM)
-			printf("the caller has insufficient privilege -- try running with sudo for chroot to work\n");
+			printf(" due to insufficient privileges -- perhaps try running as root?");
+		putchar('\n');
 	}
-		
-	printf("Server is listening ... \n");
-	listen(mysock, 5); 
-	printf("--- server init done ---- \n");
+
+	printf("SERVER: Now listening on %s:%d\n", SERVER_IP, SERVER_PORT);
+	listen(sock, 5); 
+	printf("--- SERVER Initialization SUCCESSFUL ---- \n");
 }
+
 
 int ls_file(char *fname) { 
 	struct stat fstat, *sp;
@@ -79,8 +76,8 @@ int ls_file(char *fname) {
 
 	tempstr[1] = '\0';
 	sp = &fstat;
-	if((r=lstat(fname, &fstat)) < 0) {
-		printf("Can't stat %s\n", fname);
+	if((r = lstat(fname, &fstat)) < 0) {
+		printf("** SERVER ERROR: Command 'ls': Can't get attributes of '%s'\n", fname);
 		return -1;
 	}
 
@@ -106,18 +103,15 @@ int ls_file(char *fname) {
 	strcat(line, tempstr);
 	sprintf(tempstr,"%4d " , sp->st_uid); 
 	strcat(line, tempstr);
-	sprintf(tempstr,"%8d " , sp->st_size); 
+	sprintf(tempstr,"%8ld " , sp->st_size); 
 	strcat(line, tempstr);
-
 	
 	strcpy(ftime,ctime(&sp->st_ctime)); 
 	ftime[strlen(ftime) - 1]=0; 
 	strcat(line,ftime);
-
 	
 	strcat(line, " ");
 	strcat(line, basename(fname));
-	
 	
 	if((sp->st_mode & 0xF000) == 0xA000){
 		readlink(fname, linkname, linknamesize);
@@ -130,6 +124,7 @@ int ls_file(char *fname) {
 	printf("%s", line);
 	n += write(csock, line, MAX);
 }
+
 
 int ls_dir(char *dirname) {
 	DIR *dp = opendir(dirname);
@@ -144,6 +139,7 @@ int ls_dir(char *dirname) {
 	}
 }
 
+
 int findCmd(char *command, char *cmd_list[9]) {
 	int i = 0;
 	while(cmd_list[i]) {
@@ -154,60 +150,48 @@ int findCmd(char *command, char *cmd_list[9]) {
 	return -1;
 }
 
+
 int main() {
 	char *server_cmds[9] = {"get", "put", "ls", "cd", "pwd", "mkdir", "rmdir", "rm", 0};
 	char tempstr[MAX];
 	
 	server_init();
 	while(1) { 
-		printf("Server: accepting new connection...\n");
+		printf("SERVER: Accepting new connections...\n");
 
 		len = sizeof(client_addr);
-		csock = accept(mysock, (struct sockaddr*)&client_addr, &len);
+		csock = accept(sock, (struct sockaddr*)&client_addr, &len);
 		if(csock < 0) {
-			printf("Server: accept error\n");
+			printf("** SERVER ERROR: Failure while establishing connection to client, can't accept socket.\n");
 			exit(1);
 		}
 
-		printf("Server: accepted a client connection from client \n");
+		printf("SERVER: Client has connected.\n");
 
 		while(1) { 
 			n = read(csock, line, MAX);
 			if(n == 0) {
-				printf("Server: clinet died, server loops\n");
+				printf("SERVER: Client has disconnected.\n");
 				close(csock);
 				break;
 			}
 
-			printf("Server: read %d bytes; line=%s\n", n, line);
+			printf("SERVER: Read %d bytes; line = '%s'\n", n, line);
 
-			
-		 	
 			strcpy(gpath, line);
 			cmd = strtok(gpath, " ");
-			pathname = strtok(NULL, " ");
-		
+			pathname = strtok(NULL, " ");		
 			
-			int index = findCmd(cmd, server_cmds);
-			char path[1024];
+			char buf[BLKSIZE], path[1024];
 			struct stat mystat, *sp = &mystat;
-			int size = 0, total = 0;
-			char buf[BLKSIZE];
-			int gd;
+			int index = findCmd(cmd, server_cmds), size = 0, total = 0, gd;
 			switch(index){
 				case 0:
-					
-					printf("get: cmd %s, path %s\n", cmd, path);
-					/**
-					* Attempt to open the file
-					* (1) return file size if successful
-					* (2) else, return BAD
-					*/
+					printf("SERVER: Command 'get': Executing '%s' in '%s'\n", cmd, path);
 					int fd = open(path, O_RDONLY);
-
 					if (fd >= 0) { 
 						lstat(path, &mystat);
-						sprintf(buf, "%d", mystat.st_size);
+						sprintf(buf, "%ld", mystat.st_size);
 						write(csock, buf, sizeof(buf));         
 						bzero(buf, sizeof(buf)); buf[sizeof(buf) - 1] = '\0';
 
@@ -215,36 +199,28 @@ int main() {
 						while (n = read(fd, buf, sizeof(buf))) { 
 							if (n != 0) {
 								buf[sizeof(buf) - 1] = '\0';
-
 								
 								bytes += n;
-								printf("wrote %d bytes\n", bytes);
+								printf("SERVER: Command 'get': Wrote %d bytes.\n", bytes);
 
-								
 								write(csock, buf, sizeof(buf));
 								bzero(buf, sizeof(buf));
 								buf[sizeof(buf) - 1] = '\0';
 							}
 						} close(fd);
-					}
-					else {
+					} else
 						write(csock, "BAD", sizeof("BAD"));
-					}
-
 					break;
 				case 1:
-					
-					
 					n = read(csock, &size, 4);
 					if(size == 0) {
-						printf("No file contents to recieve\n");
+						printf("** SERVER ERROR: Command 'put': No file contents to recieve.\n");
 						strcpy(line, "No file contents to recieve\n");
 					} else {
-						
 						gd = open(pathname, O_WRONLY|O_CREAT,0644);
 						if(gd < 0) {
-							printf("Server: Cannot open file for writing\n");
-							strcpy(line, "Cannot open file for writing at server");
+							printf("** SERVER ERROR: Command 'put': Cannot open file for writing.\n");
+							strcpy(line, "Cannot open file for writing on SERVER");
 						}
 						
 						while(total < size) {
@@ -256,29 +232,28 @@ int main() {
 						}
 
 						if(gd) {
-							printf("Server: read %d bytes and put into file %s\n", total+4, pathname);
+							printf("SERVER: Command 'put': Wrote %d bytes to %s\n", total+4, pathname);
 							strcpy(line, "success");
 						}
 					}
 					
 					n = write(csock, line, MAX);
-					printf("Server: wrote additional %d bytes; echo = %s", n, line);
+					printf("SERVER: Command 'put': Wrote additional %d bytes; echo = '%s'", n, line);
 					break;
 				case 2:
-					
 					if(!pathname) 
 						strcpy(path, "./");
 					else
 						strcpy(path, pathname);
 
 					if(r = lstat(path, sp) < 0) {
-						sprintf(tempstr,"no such file or directory %s\n", path);
+						sprintf(tempstr, "SERVER: Command 'ls': No such file or directory\n", path);
 						n=0;
 						strcpy(line, tempstr);
 						n = write(csock, line, MAX);
 						strcpy(line, "END OF ls\n");
 						n += write(csock, line, MAX);
-						printf("Server: wrote %d bytes\n", n);
+						printf("SERVER: Command 'ls': Wrote %d bytes.\n", n);
 						break;
 					}
 					
@@ -298,68 +273,63 @@ int main() {
 
 					strcpy(line, "END OF ls\n");
 					n += write(csock, line, MAX);
-					printf("Server: wrote %d bytes\n", n);
+					printf("SERVER: Command 'ls': Wrote %d bytes.\n", n);
 					break;
 				case 3:
-					
 					r = chdir(pathname);
 					if(r < 0)
-						strcpy(line, "cd failed");
+						strcpy(line, "SERVER: Command 'cd': FAILED");
 					else
-						strcpy(line, "cd OK");
+						strcpy(line, "SERVER: Command 'cd': SUCCESS");
 
 					n += write(csock, line, MAX);
-					printf("Server: wrote %d bytes; echo = %s\n", n,line);
+					printf("SERVER: Command 'cd': Wrote %d bytes; echo = '%s'\n", n, line);
 					break;
 				case 4:
-					
 					getcwd(buf, MAX);
-					printf("server cwd: %s\n", buf);
+					printf("SERVER: Command 'cwd': Current Working Directory: '%s'\n", buf);
 					n = write(csock, buf, MAX);
-					printf("server: wrote n=%d bytes; ECHO = %s\n",n,buf);
+					printf("SERVER: Wrote %d bytes; echo = '%s'\n", n, buf);
 					break;
 				case 5:
-					
 					r = mkdir(pathname, 0755);
 
 					if(r < 0)
-						strcpy(line, "mkdir failed");
+						strcpy(line, "SERVER: Command 'mkdir': FAILED");
 					else
-						strcpy(line, "mkdir OK");
+						strcpy(line, "SERVER: Command 'mkdir': SUCCESS");
 
 					n += write(csock, line, MAX);
-					printf("Server: wrote %d bytes; echo = %s\n", n,line);
+					printf("SERVER: Command 'mkdir': Wrote %d bytes; echo = '%s'\n", n, line);
 					break;
 				case 6:
-					
 					r = rmdir(pathname);
 					if(r < 0)
-						strcpy(line, "rmdir failed");
+						strcpy(line, "SERVER: Command 'rmdir': FAILED");
 					else
-						strcpy(line, "rmkdir OK");
+						strcpy(line, "SERVER: Command 'rmdir': SUCCESS");
 
 					n += write(csock, line, MAX);
-					printf("Server: wrote %d bytes; echo = %s\n", n,line);
+					printf("SERVER: Command 'rmdir': Wrote %d bytes; echo = '%s'\n", n, line);
 					break;
 				case 7:
-					
 					r = unlink(pathname);
 					if(r < 0)
-						strcpy(line,"rm failed");
+						strcpy(line, "SERVER: Command 'rm': FAILED");
 					else
-						strcpy(line, "rm OK\n");
+						strcpy(line, "SERVER: Command 'rm': SUCCESS\n");
 
 					n += write(csock, line, MAX);
-					printf("Server: wrote %d bytes; echo = %s\n", n,line);
+					printf("SERVER: Command 'rm': Wrote %d bytes; echo = '%s'\n", n, line);
 					break;
 				default:
-					printf("Command not recognized\n");
-					strcpy(line, "command not recognized");
+					printf("** SERVER ERROR: Invalid Command\n");
+					strcpy(line, "** ERROR: Invalid Command");
 					n =  write(csock, line, MAX);
-					printf("server: wrote n=%d bytes; ECHO = %s\n",n,line);
+					printf("SERVER: Default: Wrote %d bytes; echo = '%s'\n", n, line);
 					break;
 			}
-			printf("Server: ready for next request\n");
+			printf("SERVER: Ready for next request.\n");
 		}
 	}
 }
