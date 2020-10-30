@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <dirent.h>
-#include <libgen.h> //need this for POSIX version of basname
+#include <libgen.h> 
 
 #define MAX 256
 #define SERVER_HOST "localhost"
@@ -84,7 +84,7 @@ int mycat(char *filename) {
 		return -1;
 	}
 
-	//opened correctly, read and ouput in blksize chunks
+	
 	while(n = read(fd, buf, BLKSIZE))
 		m = write(1, buf, n);
 }
@@ -102,34 +102,34 @@ int ls_file(char *fname) {
 		return -1;
 	}
 
-	if((sp->st_mode & 0xF000) == 0x8000) //if is reg
+	if((sp->st_mode & 0xF000) == 0x8000) 
 		printf("%c", '-');
-	if((sp->st_mode & 0xF000) == 0x4000) //if is dir
+	if((sp->st_mode & 0xF000) == 0x4000) 
 		printf("%c", 'd');
-	if((sp->st_mode & 0xF000) == 0xA000) //if is lnk
+	if((sp->st_mode & 0xF000) == 0xA000) 
 		printf("%c", 'l');
 
 	for(i = 8; i >= 0; i--) {
-		if(sp->st_mode & (1<<i)) //print r|w|x
+		if(sp->st_mode & (1<<i)) 
 			printf("%c", t1[i]);
 		else
-			printf("%c", t2[i]); //or print -
+			printf("%c", t2[i]); 
 	}
 	
-	printf("%4d ", sp->st_nlink); //link count
-	printf("%4d " , sp->st_gid); //gid
-	printf("%4d " , sp->st_uid); //uid
-	printf("%8d " , sp->st_size); //file size
+	printf("%4d ", sp->st_nlink); 
+	printf("%4d " , sp->st_gid); 
+	printf("%4d " , sp->st_uid); 
+	printf("%8d " , sp->st_size); 
 
-	//print time
-	strcpy(ftime, ctime(&sp->st_ctime)); //calendar form
-	ftime[strlen(ftime) - 1] = 0; //kill newline char at end
+	
+	strcpy(ftime, ctime(&sp->st_ctime)); 
+	ftime[strlen(ftime) - 1] = 0; 
 	printf("%s  ", ftime);
 	
-	//print name
+	
 	printf("%s", basename(fname));
 	
-	//print linkname if symbolic file
+	
 	if((sp->st_mode & 0xF000)==0xA000) {
 		readlink(fname, linkname, linknamesize);
 		printf(" -> %s", linkname);
@@ -163,24 +163,24 @@ int main() {
 	while(1) {
 		getcwd(line, MAX);
 		printf("Client@Lab5 : %s $ ", line);
-		bzero(line, MAX); // zero out line[]
-		fgets(line, MAX, stdin); // get a line
-		line[strlen(line) - 1] = 0; // kill newline
-		if(line[0] == 0) // exit if null line
+		bzero(line, MAX); 
+		fgets(line, MAX, stdin); 
+		line[strlen(line) - 1] = 0; 
+		if(line[0] == 0) 
 			exit(0);
 
-		// tokenize first word off line
+		
 		strcpy(gpath, line);
 		cmd = strtok(gpath, " ");
 		pathname = strtok(NULL, " ");
 
 		int index = findCmd(cmd, local_cmds);
 		if(index == -1) {
-			// not local, send to server
+			
 			n = write(sock, line, MAX);
 			printf("CLIENT: Wrote %d bytes; line = '%s'\n", n, line);
 
-			if(strcmp(cmd, "ls") == 0) { // ls reads lines until sees "END OF ls"
+			if(strcmp(cmd, "ls") == 0) { 
 	 			n = 0;
 				do {
 					n += read(sock, line, MAX);
@@ -188,7 +188,7 @@ int main() {
 	 			} while(strcmp(line, "END OF ls\n") != 0);
 
 	 			printf("CLIENT: Read %d bytes.\n", n);
-			} else if(strcmp(cmd, "get") == 0) { // recives file size first, then waits to read that many bytes
+			} else if(strcmp(cmd, "get") == 0) { 
 				token = strtok(gpath, "/");
 				while (token != NULL) {
 					strcpy(cmd, token);
@@ -210,7 +210,7 @@ int main() {
 
 					printf("CLIENT: Expecting %d bytes.\n", size);
 
-					while (bytes < size) {           // read file contents from client
+					while (bytes < size) {           
 						n = read(sock, buf, sizeof(buf));
 						bytes += n;
 						printf("CLIENT: Command 'get': Read %d bytes.\n", n);
@@ -220,17 +220,17 @@ int main() {
 				} else
 					printf("** CLIENT ERROR: Command 'get': File '%s' not found on server", pathname);
 				putchar('\n');
-			} else if(strcmp(cmd, "put") == 0) {//send file size first so server knows how long to read
-				int fd; //try to open file for read
+			} else if(strcmp(cmd, "put") == 0) {
+				int fd; 
 				int size = 0;
 				fd = open(pathname, O_RDONLY);
 				if(fd < 0) {
 					printf("** CLIENT ERROR: Command 'put': Cannot read from file '%s'.\n", pathname);
-					n = write(sock, &size, 4); //write size 0 so know nothing to recieve
+					n = write(sock, &size, 4); 
 					break;
 				}
 
-				//get file size
+				
 				struct stat filestat, *sp;
 				sp = &filestat;
 				if((r = fstat(fd, sp)) < 0) {
@@ -238,36 +238,36 @@ int main() {
 				}
 
 				int total = 0;
-				size = sp->st_size; //its off_t but use int ok?
-				//round size up to nearest blksize
+				size = sp->st_size; 
+				
 						
-				//send # bytes to be sent
+				
 				total = write(sock, &size, 4);
 				n = 0;
 				char buf[BLKSIZE];
 
-				//read and write file tell end in blocksize chunks
+				
 				while((n = read(fd, buf, BLKSIZE)) > 0) {
 					write(sock, buf, n);  
 					total +=n;
 				}
 
 				printf("CLIENT: Command 'put': Wrote %d bytes.\n",total);
-				//get server response
+				
 				n = read(sock, line, MAX);
 				printf("SERVER response:  '%s'\n", line);
-			} else { //only one line to read
+			} else { 
 				n = read(sock, line, MAX);
 				printf("CLIENT: Read %d bytes; echo = '%s'\n", n, line);
 			}
 		} else {
-			//is local, execute locally
+			
 			char buf[MAX];
 			char path[1024];
 			struct stat mystat, *sp = &mystat;
 			switch(index) {
 				case 0:
-					//lcat
+					
 					r = mycat(pathname);
 					if(r == -1)
 						printf("** CLIENT ERROR: Command 'lcat': No filename.\n");
@@ -275,9 +275,9 @@ int main() {
 						printf("** CLIENT ERROR: Command 'lcat': Cannot open open file.\n");
 					break;
 				case 1:
-					//lls
+					
 					if(!pathname) {
-						//no path/file given use cwd
+						
 						strcpy(path, "./");
 					} else {
 						strcpy(path, pathname);
@@ -288,7 +288,7 @@ int main() {
 						break;
 					}
 					
-					if(path[0] != '/') { //relative, get cwd to make complete path
+					if(path[0] != '/') { 
 						getcwd(buf, MAX);
 						strcpy(path, buf);
 						strcat(path, "/");
@@ -296,13 +296,13 @@ int main() {
 							strcat(path, pathname);
 					}
 						
-					if((sp->st_mode & 0xF000) == 0x4000) // if its a directory
+					if((sp->st_mode & 0xF000) == 0x4000) 
 						ls_dir(path);
 					else
-						ls_file(path); //if its a file
+						ls_file(path); 
 					break;
 				case 2:
-					//lcd
+					
 					r = chdir(pathname);
 					if(r < 0)
 						printf("** CLIENT ERROR: Command 'lcd': FAILED\n");
@@ -310,12 +310,12 @@ int main() {
 						printf("CLIENT: Command 'lcd': SUCCESS\n");
 					break;
 				case 3:
-					//lpwd
+					
 					getcwd(buf, MAX);
 					printf("CLIENT: Command 'cwd': Current Working Directory: '%s'\n", buf);
 					break;
 				case 4:
-					//lmkdir
+					
 					r = mkdir(pathname, 0755);
 					if(r< 0)
 						printf("CLIENT: Command 'lmkdir': FAILED\n");
@@ -323,7 +323,7 @@ int main() {
 						printf("CLIENT: Command 'lmkdir': SUCCESS\n");
 					break;
 				case 5:
-					//lrmdir
+					
 					r = rmdir(pathname);
 					if(r< 0)
 						printf("CLIENT: Command 'lrmdir': FAILED\n");
@@ -331,7 +331,7 @@ int main() {
 						printf("CLIENT: Command 'lrmdir': SUCCESS\n");
 					break;
 				case 6:
-					//lrm
+					
 					r = unlink(pathname);
 					if(r< 0)
 						printf("CLIENT: Command 'lrm': FAILED\n");

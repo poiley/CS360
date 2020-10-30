@@ -33,7 +33,7 @@ char *pathname;
 
 int server_init() {
 	printf("-----server init start -----\n");
-	//create socket
+	
 	printf("1.create socket\n");
 	mysock = socket(AF_INET, SOCK_STREAM, 0 );
 	if(mysock < 0) {
@@ -42,9 +42,9 @@ int server_init() {
 	}
 
 	printf("Fill server_addr with host IP and port info\n");
-	server_addr.sin_family = AF_INET; //tcp
-	server_addr.sin_addr.s_addr = htonl(INADDR_ANY); //host ip
-	server_addr.sin_port = htons(SERVER_PORT); //port num
+	server_addr.sin_family = AF_INET; 
+	server_addr.sin_addr.s_addr = htonl(INADDR_ANY); 
+	server_addr.sin_port = htons(SERVER_PORT); 
 
 	printf("bind socket to server address\n");
 	r = bind(mysock, (struct sockaddr*)&server_addr, sizeof(server_addr));
@@ -55,7 +55,7 @@ int server_init() {
 
 	printf("  hostname = %s   port = %d \n", SERVER_HOST, SERVER_PORT);
 
-	//set current directory as root
+	
 	getcwd(buf, MAX);
 	r = chroot(buf);
 	if(r < 0) {
@@ -65,11 +65,11 @@ int server_init() {
 	}
 		
 	printf("Server is listening ... \n");
-	listen(mysock, 5); //queue length == 5
+	listen(mysock, 5); 
 	printf("--- server init done ---- \n");
 }
 
-int ls_file(char *fname) { //instead of printing fill up line
+int ls_file(char *fname) { 
 	struct stat fstat, *sp;
 	int r, i;
 	int linknamesize = 128;
@@ -84,41 +84,41 @@ int ls_file(char *fname) { //instead of printing fill up line
 		return -1;
 	}
 
-	if((sp->st_mode & 0xF000) == 0x8000) //if is reg
+	if((sp->st_mode & 0xF000) == 0x8000) 
 		strcpy(line, "-");
-	if((sp->st_mode & 0xF000) == 0x4000) //if is dir
+	if((sp->st_mode & 0xF000) == 0x4000) 
 		strcpy(line, "d");
-	if((sp->st_mode & 0xF000) == 0xA000) { //if is lnk
+	if((sp->st_mode & 0xF000) == 0xA000) { 
 		strcpy(line, "l");
 		
-		if(sp->st_mode & (1<<i)){ //print r|w|x
+		if(sp->st_mode & (1<<i)){ 
 			tempstr[0] = t1[i];
 			strcat(line, tempstr);
 		} else {
 			tempstr[0] = t2[i];
-			strcat(line, tempstr); //or print -
+			strcat(line, tempstr); 
 		}
 	}
  
-	sprintf(tempstr,"%4d ", sp->st_nlink); //link count
+	sprintf(tempstr,"%4d ", sp->st_nlink); 
 	strcat(line, tempstr);
-	sprintf(tempstr,"%4d " , sp->st_gid); //gid
+	sprintf(tempstr,"%4d " , sp->st_gid); 
 	strcat(line, tempstr);
-	sprintf(tempstr,"%4d " , sp->st_uid); //uid
+	sprintf(tempstr,"%4d " , sp->st_uid); 
 	strcat(line, tempstr);
-	sprintf(tempstr,"%8d " , sp->st_size); //file size
+	sprintf(tempstr,"%8d " , sp->st_size); 
 	strcat(line, tempstr);
 
-	//print time
-	strcpy(ftime,ctime(&sp->st_ctime)); //calendar form
-	ftime[strlen(ftime) - 1]=0; //kill newline char at end
+	
+	strcpy(ftime,ctime(&sp->st_ctime)); 
+	ftime[strlen(ftime) - 1]=0; 
 	strcat(line,ftime);
 
-	//print name
+	
 	strcat(line, " ");
 	strcat(line, basename(fname));
 	
-	//print linkname if symbolic file
+	
 	if((sp->st_mode & 0xF000) == 0xA000){
 		readlink(fname, linkname, linknamesize);
 		strcat(line, " -> ");
@@ -159,7 +159,7 @@ int main() {
 	char tempstr[MAX];
 	
 	server_init();
-	while(1) { //try to accept new client request
+	while(1) { 
 		printf("Server: accepting new connection...\n");
 
 		len = sizeof(client_addr);
@@ -171,7 +171,7 @@ int main() {
 
 		printf("Server: accepted a client connection from client \n");
 
-		while(1) { //processing loop
+		while(1) { 
 			n = read(csock, line, MAX);
 			if(n == 0) {
 				printf("Server: clinet died, server loops\n");
@@ -181,13 +181,13 @@ int main() {
 
 			printf("Server: read %d bytes; line=%s\n", n, line);
 
-			//server deals with request
-		 	//seperate command and pathname from line
+			
+		 	
 			strcpy(gpath, line);
 			cmd = strtok(gpath, " ");
 			pathname = strtok(NULL, " ");
 		
-			//determine command and execute
+			
 			int index = findCmd(cmd, server_cmds);
 			char path[1024];
 			struct stat mystat, *sp = &mystat;
@@ -196,7 +196,7 @@ int main() {
 			int gd;
 			switch(index){
 				case 0:
-					//get
+					
 					printf("get: cmd %s, path %s\n", cmd, path);
 					/**
 					* Attempt to open the file
@@ -205,22 +205,22 @@ int main() {
 					*/
 					int fd = open(path, O_RDONLY);
 
-					if (fd >= 0) { // successful
+					if (fd >= 0) { 
 						lstat(path, &mystat);
 						sprintf(buf, "%d", mystat.st_size);
-						write(csock, buf, sizeof(buf));         // Write the size to the client
+						write(csock, buf, sizeof(buf));         
 						bzero(buf, sizeof(buf)); buf[sizeof(buf) - 1] = '\0';
 
 						int bytes = 0;
-						while (n = read(fd, buf, sizeof(buf))) { // reading a line from the file
+						while (n = read(fd, buf, sizeof(buf))) { 
 							if (n != 0) {
 								buf[sizeof(buf) - 1] = '\0';
 
-								// Update bytes
+								
 								bytes += n;
 								printf("wrote %d bytes\n", bytes);
 
-								// Write the contents to the server
+								
 								write(csock, buf, sizeof(buf));
 								bzero(buf, sizeof(buf));
 								buf[sizeof(buf) - 1] = '\0';
@@ -233,14 +233,14 @@ int main() {
 
 					break;
 				case 1:
-					//put
-					//read number of blk sizes
+					
+					
 					n = read(csock, &size, 4);
 					if(size == 0) {
 						printf("No file contents to recieve\n");
 						strcpy(line, "No file contents to recieve\n");
 					} else {
-						//open file for write
+						
 						gd = open(pathname, O_WRONLY|O_CREAT,0644);
 						if(gd < 0) {
 							printf("Server: Cannot open file for writing\n");
@@ -248,9 +248,9 @@ int main() {
 						}
 						
 						while(total < size) {
-							n = read(csock, buf, BLKSIZE); //reading even if file not open to clear line between client and server
+							n = read(csock, buf, BLKSIZE); 
 							total += n;
-							//put into file if file opened correctly
+							
 							if(gd)
 								write(gd, buf, n);
 						}
@@ -260,13 +260,13 @@ int main() {
 							strcpy(line, "success");
 						}
 					}
-					//write back results
+					
 					n = write(csock, line, MAX);
 					printf("Server: wrote additional %d bytes; echo = %s", n, line);
 					break;
 				case 2:
-					//ls
-					if(!pathname) //no path/file given use cwd
+					
+					if(!pathname) 
 						strcpy(path, "./");
 					else
 						strcpy(path, pathname);
@@ -282,7 +282,7 @@ int main() {
 						break;
 					}
 					
-					if(path[0] != '/') { //relative, get cwd to make complete path
+					if(path[0] != '/') { 
 						getcwd(buf, MAX);
 						strcpy(path, buf);
 						strcat(path, "/");
@@ -291,17 +291,17 @@ int main() {
 					}
 
 					n = 0;  
-					if((sp->st_mode & 0xF000) == 0x4000) // if its a directory
+					if((sp->st_mode & 0xF000) == 0x4000) 
 						ls_dir(path);
 					else
-						ls_file(path); //if its a file
+						ls_file(path); 
 
 					strcpy(line, "END OF ls\n");
 					n += write(csock, line, MAX);
 					printf("Server: wrote %d bytes\n", n);
 					break;
 				case 3:
-					//cd
+					
 					r = chdir(pathname);
 					if(r < 0)
 						strcpy(line, "cd failed");
@@ -312,14 +312,14 @@ int main() {
 					printf("Server: wrote %d bytes; echo = %s\n", n,line);
 					break;
 				case 4:
-					//pwd
+					
 					getcwd(buf, MAX);
 					printf("server cwd: %s\n", buf);
 					n = write(csock, buf, MAX);
 					printf("server: wrote n=%d bytes; ECHO = %s\n",n,buf);
 					break;
 				case 5:
-					//mkdir
+					
 					r = mkdir(pathname, 0755);
 
 					if(r < 0)
@@ -331,7 +331,7 @@ int main() {
 					printf("Server: wrote %d bytes; echo = %s\n", n,line);
 					break;
 				case 6:
-					//rmdir
+					
 					r = rmdir(pathname);
 					if(r < 0)
 						strcpy(line, "rmdir failed");
@@ -342,7 +342,7 @@ int main() {
 					printf("Server: wrote %d bytes; echo = %s\n", n,line);
 					break;
 				case 7:
-					//rm
+					
 					r = unlink(pathname);
 					if(r < 0)
 						strcpy(line,"rm failed");
