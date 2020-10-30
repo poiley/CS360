@@ -322,6 +322,7 @@ int main() {
 				case 5:
 					//mkdir
 					r = mkdir(pathname, 0755);
+					
 					if(r < 0)
 						strcpy(line, "mkdir failed");
 					else
