@@ -1,7 +1,7 @@
 #include "globals.h"
-#include "util.h"
 
 #include <stdio.h>
+#include <sys/stat.h>
 
 int rmchild(MINODE *pip, char *name) {
     char *cp, buf[BLKSIZE];

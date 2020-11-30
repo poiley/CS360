@@ -2,6 +2,7 @@
 
 #include <time.h>
 #include <stdio.h>
+#include <sys/stat.h>
 
 int ideal_length(int name_len) {
     return 4 * ((8 + name_len + 3) / 4);

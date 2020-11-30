@@ -1,9 +1,10 @@
+#include "type.h"
 #include "globals.h"
-#include "util.h"
 
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 
 void mychdir() {
     if (strlen(pathname) == 0 || strcmp(pathname, "/") == 0) {

@@ -2,37 +2,40 @@
 
 #include <time.h>
 #include <stdio.h>
+#include <sys/stat.h>
 
-void link() 
-{
+void link() {
     int ino = getino(pathname); 
-    if(!ino) 
-    {
+    if(!ino) {
         printf("Source file does not exist\n");
         return;
     }
+
     MINODE * source = iget(dev, ino); 
-    if(S_ISDIR(source->inode.i_mode)) 
-    {
+
+    if(S_ISDIR(source->inode.i_mode)) {
         printf("Link to directory not allowed\n");
         return;
     }
+    
     dbname(pathname2);
     int dirino = getino(dname);
-    if(!dirino) 
-    {
+    
+    if(!dirino) {
         printf("Destination directory does not exist\n");
         return;
     }
+
     MINODE * dirnode = iget(dev, dirino);
-    if(!S_ISDIR(dirnode->inode.i_mode)) 
-    {
+    
+    if(!S_ISDIR(dirnode->inode.i_mode)) {
         printf("Destination is not a directory\n");
         return;
     }
+
     char *base = strdup(bname);
-    if(search(dirnode, base)) 
-    {
+    
+    if(search(dirnode, base)) {
         printf("Destination file already exists\n");
         return;
     }
@@ -47,30 +50,26 @@ void link()
     iput(dirnode); 
 }
 
-void unlink() 
-{
+void unlink() {
     int ino = getino(pathname); 
-    if(!ino) 
-    {
+    if(!ino) {
         printf("Could not find specified path\n");
         return;
     }
+
     MINODE * m = iget(dev, ino); 
-    if(S_ISDIR(m->inode.i_mode)) 
-    {
+    
+    if(S_ISDIR(m->inode.i_mode)) {
         printf("Specified path is a directory\n");
         return;
     }
-    if(--(m->inode.i_links_count) == 0) 
-    {
+
+    if(--(m->inode.i_links_count) == 0) {
         mytruncate(m); 
         idalloc(m->dev, m->ino);
-    }
-    else
-    {
+    } else {
         m->dirty = 1; 
     }
-
    
     dbname(pathname);
     MINODE * parent = iget(dev, getino(dname)); 
