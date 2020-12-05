@@ -1,0 +1,10 @@
+echo "[CONSOLE] Making mkdisk executable"
+chmod +x ./mkdisk
+echo "[CONSOLE] Generating Virtual Disk..."
+./mkdisk
+echo "[CONSOLE] Virtual Disk generation complete."
+echo "[CONSOLE] Compiling..."
+gcc -m32 *.c *.h -w
+echo "[CONSOLE] Compiling complete."
+echo "[CONSOLE] Running program.\n" 
+./a.out diskimage
