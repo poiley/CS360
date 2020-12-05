@@ -1,4 +1,46 @@
-#include "../level1/commands.h"
+#include "globals.h"
+
+#include <stdio.h>
+
+void cp_file(char *src, char *dest) {
+    int n = 0;
+    char buf[BLKSIZE];
+    int fd = open_file(src, "0");
+    int gd = open_file(dest, "1");
+
+    buf[BLKSIZE]=0;
+
+    if(gd < 0) {
+        printf("Creating File\n");
+        creat_file(dest);
+        gd = open_file(dest, "1");;
+    }
+    
+    while((n = myread(fd, buf, BLKSIZE, 0)))
+        mywrite(gd, buf, n);
+
+    close_file(fd);
+    close_file(gd);
+    
+    return;
+}
+
+void mv_file(char *src, char *dest) {
+    int sfd = open_file(src, "0");
+    MINODE *mip = running->fd[sfd]->minodePtr;
+
+    if(mip->dev == sfd) {
+        printf("\n\nSame Dev\n\n\n\n");
+        link_file(src, dest);
+        unlink_file(src);
+    } else {
+        printf("Different Dev\n");
+        cp_file(src, dest);
+        unlink_file(src);
+    }
+    
+    return;
+}
 
 int write_file() {
     char string[BLKSIZE];
@@ -27,6 +69,7 @@ int mywrite(int fd, char buf[], int nbytes) {
     oftp = running->fd[fd];
     MINODE *mip;
     mip = oftp->minodePtr;
+    
     while(nbytes > 0) {
         int lbk = oftp->offset / BLKSIZE;
         int startByte = oftp->offset % BLKSIZE;
@@ -34,7 +77,7 @@ int mywrite(int fd, char buf[], int nbytes) {
             printf("[mywrite]: Direct Block\n");
             if(mip->inode.i_block[lbk] == 0)
                 mip->inode.i_block[lbk] = balloc(mip->dev);
-\            blk  = mip->inode.i_block[lbk];
+            blk  = mip->inode.i_block[lbk];
         } else if(lbk >= 12 && lbk < 256 + 12) {
             printf("[mywrite]: Indirect Block\n");
             if(mip->inode.i_block[12] == 0) {
@@ -57,11 +100,13 @@ int mywrite(int fd, char buf[], int nbytes) {
             get_block(mip->dev, dblk, (char *)dbuf);
             blk = dbuf[lbk %256];
         }
+
         memset(wbuf, 0, BLKSIZE);
         get_block(mip->dev, blk, wbuf);
         char *cp = wbuf + startByte;
         int remain = BLKSIZE -startByte;
         char *cq = buf; 
+
         while(remain > 0) {
             *cp++ = *cq++;
             nbytes--; remain--;
@@ -71,8 +116,10 @@ int mywrite(int fd, char buf[], int nbytes) {
             if(nbytes <= 0)
                 break;
         }
+        
         put_block(mip->dev,blk,wbuf);
     }
+
     mip->dirty =1;
     printf("[mywrite]: Wrote %d char into file descriptor fd=%d\n", count,fd);
     return nbytes;

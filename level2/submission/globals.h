@@ -56,3 +56,17 @@ void mystat();
 void mychmod();
 void touch(char *name);
 void quit();
+
+//LEVEL2
+int write_file();
+int mywrite(int fd, char buf[], int nbytes);
+int read_file(char *fd, char *bytes);
+int min3(int a, int b, int c);
+int myread(int fd, char *buf, int nbytes, int supress_msg);
+int cat_file(char *filename);
+int open_file(char *pathname, char *mode);
+int truncate_file(MINODE *mip);
+int close_file(int fd);
+int lseek_file(int fd, int position);
+void mv_file(char *src, char *dest);
+void cp_file(char *src, char *dest); 

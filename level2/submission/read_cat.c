@@ -1,4 +1,6 @@
-#include "../level1/commands.h"
+#include "globals.h"
+
+#include <stdio.h>
 
 int read_file(char *fd, char *bytes) {
     int i_fd = atoi(fd), i_bytes = atoi(bytes);
@@ -8,7 +10,7 @@ int read_file(char *fd, char *bytes) {
     return myread(i_fd, buf, i_bytes, 0);
 }
 
-int min3(int a, int b, int c) {
+int smallest(int a, int b, int c) {
     if (a <= b && a <= c)
         return a;
     else if (b <= c && b <= a)
@@ -25,6 +27,7 @@ int myread(int fd, char *buf, int nbytes, int supress_msg) {
         printf("[myread]: fd is NULL!");
         return -1;
     }
+    
     OFT *oftp = running->fd[fd];
     MINODE *mip = oftp->minodePtr;
 
@@ -65,7 +68,7 @@ int myread(int fd, char *buf, int nbytes, int supress_msg) {
         char *cp = readbuf + start; 
         remain = BLKSIZE - start;
 
-        min = min3(nbytes, avail, remain);
+        min = smallest(nbytes, avail, remain);
         if (!supress_msg)
             printf("[myread]: offset=%d min=%d blk=%d\n", oftp->offset, min, blk);
         strncpy(buf, cp, min);
@@ -89,8 +92,7 @@ int cat_file(char *filename) {
     int len=0, n, i, fd = open_file(filename, "0");
 
     if (fd < 0) return -1;
-
-    mybuf[BLKSIZE]=0;
+        mybuf[BLKSIZE]=0;
 
     printf("[cat_file]:\n\n");
     while ((n = myread(fd, mybuf, BLKSIZE, 1))) {
@@ -101,14 +103,12 @@ int cat_file(char *filename) {
                 putchar('\n');
                 continue;
             }
-
             putchar(mybuf[i]);
         }
-
         len += n;
     }
-    printf("[cat_file]: Read %d bytes.\n\n", len);
 
+    printf("[cat_file]: Read %d bytes.\n\n", len);
     close_file(fd);
 
     return 0;
