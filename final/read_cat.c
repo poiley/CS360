@@ -1,3 +1,8 @@
+/*
+ * File:  read_cat.c 
+ * By: Benjamin Poile and Lovee Baccus
+ * Cpts 360 - Fall 2020
+ */
 #include "commands.h"
 
 int read_file(char *fd, char *bytes){

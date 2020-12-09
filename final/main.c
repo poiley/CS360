@@ -1,3 +1,8 @@
+/*
+ * File:  main.c 
+ * By: Benjamin Poile and Lovee Baccus
+ * Cpts 360 - Fall 2020
+ */
 #include "util.c"
 #include "cd_ls_pwd.c"
 #include "mkdir_creat.c"

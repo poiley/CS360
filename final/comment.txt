@@ -28,16 +28,11 @@ double approx_pi(int n) {
              how I'm computing each part of the next term in the series)
 
 
-/*
- * Function: square_the_biggest
- * ----------------------------
- *   Returns the square of the largest of its two input values
- *
- *   n1: one real value 
- *   n2: the other real value
- *
- *   returns: the square of the larger of n1 and n2 
- */
 
-double square_the_biggest(float n1, float n2) {
- ...
+
+FOR FILE HEADERS
+/*
+ * File:  filename.c 
+ * By: Benjamin Poile and Lovee Baccus
+ * Cpts 360 - Fall 2020
+ */

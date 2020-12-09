@@ -1,3 +1,9 @@
+/*
+ * File:  util.h 
+ * By: Benjamin Poile and Lovee Baccus
+ * Cpts 360 - Fall 2020
+ */
+
 #ifndef __360PROJ_UTIL__
 #define __360PROJ_UTIL__
 
