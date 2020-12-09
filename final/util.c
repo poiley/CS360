@@ -1,3 +1,9 @@
+/*
+ * File:  util.c 
+ * By: Benjamin Poile and Lovee Baccus
+ * Cpts 360 - Fall 2020
+ */
+
 /*********** util.c file ****************/
 #include "util.h"
 

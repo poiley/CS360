@@ -1,3 +1,9 @@
+/*
+ * File:  cd_ls_pwd.c 
+ * By: Benjamin Poile and Lovee Baccus
+ * Cpts 360 - Fall 2020
+ */
+
 #include "commands.h"
 
 char t1[9] = "xwrxwrxwr", t2[9] = "---------";

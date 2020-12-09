@@ -1,3 +1,8 @@
+/*
+ * File:  rmdir.c 
+ * By: Benjamin Poile and Lovee Baccus
+ * Cpts 360 - Fall 2020
+ */
 #include "commands.h"
 
 //Assume command line rmdir (pathname)

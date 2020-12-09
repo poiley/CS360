@@ -1,3 +1,9 @@
+/*
+ * File:  type.h 
+ * By: Benjamin Poile and Lovee Baccus
+ * Cpts 360 - Fall 2020
+ */
+
 /*************** type.h file ************************/
 #include <sys/types.h>
 #include <ext2fs/ext2_fs.h>

@@ -1,3 +1,9 @@
+/*
+ * File:  mkdir_creat.c 
+ * By: Benjamin Poile and Lovee Baccus
+ * Cpts 360 - Fall 2020
+ */
+
 #include "commands.h"
 
 int make_dir(char *pathname){
