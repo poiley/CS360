@@ -11,6 +11,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+int quit();
+
 int get_block(int dev, int blk, char *buf);
 int put_block(int dev, int blk, char *buf);
 int tokenize(char *pathname);

@@ -103,7 +103,7 @@ void iput(MINODE *mip){
     /***** NOTE *******************************************
         For mountroot, we never MODIFY any loaded INODE
         so no need to write it back
-        FOR LATER WROK: MUST write INODE back to disk if refCount==0 && DIRTY
+        FOR LATER WORK: MUST write INODE back to disk if refCount==0 && DIRTY
         Write YOUR code here to write INODE back to disk
     ********************************************************/
 

@@ -11,7 +11,7 @@
 #include "write.c"
 
 
-// global variables
+// GLOBAL VARIABLES
 MINODE minode[NMINODE];
 MINODE *root;
 
@@ -19,25 +19,31 @@ PROC proc[NPROC], *running;
 OFT oft[NOFT];
 MTABLE mtable[NMTABLE];
 
-char default_disk[10]="diskimage";
-char gline[128]; // global for tokenized components
-char *name[64];  // assume at most 32 components in pathname
-int   nname;         // number of component strings
+char default_disk[10] = "diskimage";
+char gline[128];    // global for tokenized components
+char *name[64];     // assume at most 32 components in pathname
+int  nname;         // number of component strings
+char *disk;
 
 int fd, dev;
 int nblocks, ninodes, bmap, imap, inode_start; // disk parameters
 
-int quit();
-
+/*
+ * Function: init 
+ * Author: Ben Poile
+ * --------------------
+ *  Description: Initializes and populates required file system variables 
+ *  Params: void
+ *  Return: int
+ *              0 for a successful run
+ */
 int init() {
     int i, j;
     MINODE *mip;
     PROC   *p;
     MTABLE *minodePtr; 
 
-    printf("init()\n");
-
-    for (i=0; i<NMINODE; i++) {
+    for (i = 0; i < NMINODE; i++) {
         mip = &minode[i];
         mip->dev = mip->ino = 0;
         mip->refCount = 0;
@@ -45,17 +51,17 @@ int init() {
         mip->mntptr = 0;
     }
 
-    for (i=0; i<NPROC; i++) {
+    for (i = 0; i < NPROC; i++) {
         p = &proc[i];
         p->pid = i;
         p->uid = p->gid = 0;
         p->cwd = 0;
         p->status = FREE;
-        for (j=0; j<NFD; j++)
+        for (j = 0; j < NFD; j++)
             p->fd[j] = 0;
     }
 
-    for (i=0; i<NMTABLE; i++) {
+    for (i = 0; i < NMTABLE; i++) {
         minodePtr = &mtable[i];
         minodePtr->dev=0;
         minodePtr->mntDirPtr=0;
@@ -64,45 +70,60 @@ int init() {
     return 0;
 }
 
-// load root INODE and set root pointer to it
-int mount_root()
-{  
-    printf("mount_root()\n");
+/*
+ * Function: mount_root 
+ * Author: Ben Poile and Lovee Baccus
+ * --------------------
+ *  Description: Mounts the filesystem by calling iget on the global var 'dev' and assigns it to the MINODE struct root.
+ *  Params: void
+ *  Return: int
+ *              0 for a successful run
+ */
+int mount_root() {
     root = iget(dev, 2);
-
     return 0;
 }
 
-char *disk;
+/*
+ * Function: main 
+ * Author: Ben Poile and Lovee Baccus
+ * --------------------
+ *  Description: The purpose of the main function in this program is to handle initial error checking, program setup, and the shell.
+ *  Params: void
+ *  Return: int
+ *              0 for a successful run
+ *              1 for a failed run
+ */
 int main(int argc, char *argv[ ]) {
-    //int ino;
     char buf[BLKSIZE];
     char line[128], cmd[32], src[128], dest[128];
-    //Only if no argument for disk
-    if (argc>1)
-        disk=argv[1];
-    else{
-        printf("No disk parameter using %s as default\n", default_disk);
-        disk=default_disk;
+
+    if (argc > 1) // If there are user args
+        disk = argv[1];
+    else {
+        printf("No disk parameter given. Using the default disk '%s' instead.\n", default_disk);
+        disk = default_disk;
     }
  
-    printf("checking EXT2 FS ....");
-    if ((fd = open(disk, O_RDWR)) < 0){
-        printf("open %s failed\n", disk);
+    printf("[DEBUG] Opening filesystem.\n");
+    if ((fd = open(disk, O_RDWR)) < 0) {
+        printf("[ERROR] in main(): Open %s failed. Exiting.\n", disk);
         exit(1);
     }
-    dev = fd;    // fd is the global dev 
 
-    /********** read super block  ****************/
+    dev = fd; // fd is the global dev 
+
+    // Read in the superblock
     get_block(dev, 1, buf);
     sp = (SUPER *)buf;
 
-    /* verify it's an ext2 file system ***********/
+    // Ensure filesystem is of type ext2
     if (sp->s_magic != 0xEF53){
-        printf("magic = %x is not an ext2 filesystem\n", sp->s_magic);
+        printf("[DEBUG] magic signature: %x\n[ERROR] in main(): Superblock states that this is not an ext2 filesystem. Exiting.\n", sp->s_magic);
         exit(1);
-    }     
-    printf("EXT2 FS OK\n");
+    }
+
+    printf("[DEBUG] Filesystem is ext2 and ready for reading.\n");
     ninodes = sp->s_inodes_count;
     nblocks = sp->s_blocks_count;
 
@@ -112,81 +133,89 @@ int main(int argc, char *argv[ ]) {
     bmap = gp->bg_block_bitmap;
     imap = gp->bg_inode_bitmap;
     inode_start = gp->bg_inode_table;
-    printf("bmp=%d imap=%d inode_start = %d\n", bmap, imap, inode_start);
+    printf("[DEBUG] bmp: %d\timap: %d\tinode_start: %d\n", bmap, imap, inode_start);
 
     init();  
     mount_root();
-    printf("root refCount = %d\n", root->refCount);
+    printf("[DEBUG] root refCount = %d\n", root->refCount);
 
-    printf("creating P0 as running process\n");
+    printf("[DEBUG] Creating process 0 as running process.\n");
     running = &proc[0];
     proc[0].uid = 0;
     running->status = READY;
     running->cwd = iget(dev, 2);
-    printf("root refCount = %d\n", root->refCount);
+    printf("[DEBUG] root refCount: %d\n", root->refCount);
     
-    // WRTIE code here to create P1 as a USER process
+    // Create P1 as a USER process
     proc[1].uid = 1;
     proc[1].status = FREE;
     
     while(1) {
-        printf("running p%d: [ls|cd|pwd|mkdir|rmdir|creat|symlink|link|unlink|open|read|lseek|pfd|write|close|cat|cp|mv|quit] \n", running->uid);
-        printf("\033[1;32m");
-        printf("COMMAND [->]");
-        printf("\033[0m");
+        printf("Running Process %d - Available Commands: \n\tls | cd | pwd | mkdir | rmdir | creat | symlink | link | unlink | open | read | lseek | pfd | write | close | cat | cp | mv | quit] \n", running->uid);
+        printf("user@FinalProject ~> ");
+        
         fgets(line, 128, stdin);
         line[strlen(line)-1] = 0;
 
         *src = *dest = 0; // reset src and dest strings
 
-        if (line[0] == 0)
+        if (line[0] == 0) // If there's no input from the user
             continue;
 
         sscanf(line, "%s %s %s", cmd, src, dest);
-        printf("cmd=%s src=%s dest=%s\n", cmd, src, dest);
+        printf("[DEBUG] Command: %s\tSource: %s\tDestination: %s\n", cmd, src, dest);
 
         src[strlen(src)] = 0;
         dest[strlen(dest)] = 0;
 
-        if (strcmp(cmd, "ls")==0)
+        if (strcmp(cmd, "ls") == 0)
             ls(src);
-        else if (strcmp(cmd, "cd")==0)
+        else if (strcmp(cmd, "cd") == 0)
             cd(src);
-        else if (strcmp(cmd, "pwd")==0)
+        else if (strcmp(cmd, "pwd") == 0)
             pwd(running->cwd);
-        else if (strcmp(cmd, "mkdir")==0)
+        else if (strcmp(cmd, "mkdir") == 0)
             make_dir(src);
-        else if (strcmp(cmd, "rmdir")==0)
+        else if (strcmp(cmd, "rmdir") == 0)
             rm_dir(src);
-        else if (strcmp(cmd, "creat")==0 || strcmp(cmd, "touch") == 0)
+        else if (strcmp(cmd, "creat") == 0 || strcmp(cmd, "touch") == 0)
             creat_file(src);
-        else if (strcmp(cmd, "symlink")==0)
+        else if (strcmp(cmd, "symlink") == 0)
             sym_link(src, dest);
-        else if (strcmp(cmd, "link")==0)
+        else if (strcmp(cmd, "link") == 0)
             link_file(src, dest);
-        else if (strcmp(cmd, "unlink")==0)
+        else if (strcmp(cmd, "unlink") == 0)
             unlink_file(src);
-        else if (strcmp(cmd, "open")==0)
+        else if (strcmp(cmd, "open") == 0)
             open_file(src, dest);
-        else if(strcmp(cmd, "read")==0)
+        else if(strcmp(cmd, "read") == 0)
             read_file(src,dest);
-        else if(strcmp(cmd, "cat")==0)
+        else if(strcmp(cmd, "cat") == 0)
             cat_file(src);
-        else if(strcmp(cmd, "close")==0)
+        else if(strcmp(cmd, "close") == 0)
             close_file(atoi(src));
-        else if(strcmp(cmd, "lseek")==0)
+        else if(strcmp(cmd, "lseek") == 0)
             lseek_file(atoi(src), atoi(dest));
-        else if (strcmp(cmd, "cp")==0)
+        else if (strcmp(cmd, "cp") == 0)
             cp_file(src, dest);
         else if (strcmp(cmd, "mv"))
             mv_file(src, dest);
         else if(strcmp(cmd, "write"))
             write_file();
-        else if (strcmp(cmd, "quit")==0 || strcmp(cmd, "q")==0)
+        else if (strcmp(cmd, "quit") == 0 || strcmp(cmd, "q") == 0)
             quit();
     }
 }
 
+/*
+ * Function: quit 
+ * Author: Ben Poile
+ * --------------------
+ *  Description: Close filesystem and exit the program.
+ *  Params: void
+ *  Return: int
+ *              0 for a successful exit
+ */
 int quit() {
     MINODE *mip;
     for (int i = 0; i < NMINODE; i++) {

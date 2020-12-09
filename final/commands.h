@@ -5,14 +5,13 @@
 
 #include "util.h"
 
-// global vars from main
+// Declares but does not define Global Variables for usage in main and utility functions
 extern MINODE minode[NMINODE], *root;
 extern PROC proc[NPROC], *running;
 extern MTABLE mtable[NMTABLE];
-
 extern int dev, imap, bmap, ninodes, nblocks;
 
-// mountroot.c
+// main.c
 int init();
 int mount_root();
 int quit();
@@ -59,8 +58,4 @@ int cat_file(char *pathname);
 //write.c
 int write_File();
 int mywrtie(int fd, char *buf, int nbytes);
-
-//mount_umout.c
-int mount(char *filesys, char *mount_point);
-int umount(char *filesys);
 

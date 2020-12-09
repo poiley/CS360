@@ -29,9 +29,16 @@ DIR   *dp;
 #define NPROC          2
 #define NFD           10
 #define NOFT          40
-//Objects
-//MINODE, OFT, PROC, MTABLE (page 321)
-typedef struct minode{
+
+/* 
+ * Name: MINODE
+ * Type: struct
+ * Author: KC Wang
+ * --------------------
+ *  Description: Each file in an ext2 filesystem correlates to an inode.
+ *               This is our implementation of an inode in C.
+ */
+typedef struct minode {
     //from ext2 inode
     INODE inode;
     int dev, ino;
@@ -39,7 +46,7 @@ typedef struct minode{
     int dirty;
     int mounted;
     struct MTABLE *mntptr;
-}MINODE;
+} MINODE;
 
 /* our inode structure
 struct ext2_inode{
