@@ -1,0 +1,46 @@
+Function Comments: Every function (in both the .h and the .c files) should have a comment describing:
+
+    what function does;
+    what its parameter values are
+    what values it returns (if a function returns one type of value usually, and another value to indicate an error, your comment should describe both of these types of return values). 
+
+In header files, function comments are for the user of the interface. In a source file, function comments are for readers of the implementation of that function. Because of this, function comments in C source files often additionally include a description of how the function is implemented. In particular, if a function implements a complicated algorithm, its comment may describe the main steps of the algorithm.
+
+My advice on writing function comments: write the function's comment first, then write the function code. For complicated functions, having a comment that lists the steps of the algorithm, will help you
+
+When commenting stick to a particular style. For example:
+
+
+/*
+ * Function:  approx_pi 
+ * --------------------
+ * computes an approximation of pi using:
+ *    pi/6 = 1/2 + (1/2 x 3/4) 1/5 (1/2)^3  + (1/2 x 3/4 x 5/6) 1/7 (1/2)^5 +
+ *
+ *  n: number of terms in the series to sum
+ *
+ *  returns: the approximate value of pi obtained by suming the first n terms
+ *           in the above series
+ *           returns zero on error (if n is non-positive)
+ */
+
+double approx_pi(int n) {
+  ...
+
+      (note: for this function, I'd likely have in-line comments describing 
+             how I'm computing each part of the next term in the series)
+
+
+/*
+ * Function: square_the_biggest
+ * ----------------------------
+ *   Returns the square of the largest of its two input values
+ *
+ *   n1: one real value 
+ *   n2: the other real value
+ *
+ *   returns: the square of the larger of n1 and n2 
+ */
+
+double square_the_biggest(float n1, float n2) {
+ ...
