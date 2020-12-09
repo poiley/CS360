@@ -54,25 +54,6 @@ typedef struct minode {
     struct MTABLE *mntptr;
 } MINODE;
 
-/* our inode structure
-struct ext2_inode{
-    u16 i_mode;
-    u16 i_uid;
-    u32 i_size;
-    u32 i_atime;
-    u32 i_ctime;
-    u32 i_mtime;
-    u32 i_dtime;
-    u16 i_gid;
-    u16 i_links_count;254
-    u32 i_blocks;
-    u32 i_flags;
-    u32 i_reserved1;
-    u32 i_block[15];
-    u32 pad[7];
-};
-*/
-
 typedef struct oft{
     int  mode;
     int  refCount;
@@ -101,7 +82,7 @@ typedef struct mtable{
     MINODE *mntDirPtr;
     char devName[64];
     char mntName[64];
-}MTABLE;
+} MTABLE;
 
 /*------------------------------------------------
 Use of getino()/iget()/iput(): In a file system, almost every operation begins with a pathname,

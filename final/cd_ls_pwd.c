@@ -8,8 +8,16 @@
 
 char t1[9] = "xwrxwrxwr", t2[9] = "---------";
 
-int cd(char *pathname)   
-{
+/*
+ * Function: cd
+ * Author: Ben Poile
+ * --------------------
+ *  Description: Change the current working directory
+ *  Params:      char *pathname     The path we want to change our current working directory to
+ *  Returns: int    
+ *               0 if successful
+ */
+int cd(char *pathname) {
     MINODE *mip;
     int ino;
 
@@ -19,13 +27,13 @@ int cd(char *pathname)
         ino = root->ino;
 
     mip = iget(dev, ino);
-    //Check if DIRECTORY
-    if ((mip->inode.i_mode & 0xF000) == 0x4000){ 
+    
+    if ((mip->inode.i_mode & 0xF000) == 0x4000){ // Ensure the path given is a valid directory
         iput(running->cwd);
         running->cwd = mip;
     }
 
-    printf("\ncwd = ");
+    printf("\n[DEBUG] CWD: "); // Output debugging information on the new current working directory
     int cur_dev = dev;
     rpwd(running->cwd);
     dev = cur_dev;
@@ -33,64 +41,73 @@ int cd(char *pathname)
 
     return 0;
 }
-//              HEX   orginally in    Octal
-//S_IFDIR 0x4000 () directory        0040000
-//S_IFREG 0x8000 () regular file     0100000
-//S_IFLNK 0xA000 () symbolic link    0120000
-int ls_file(MINODE *mip, char *name)
-{
+
+/*
+ * Function: ls_file
+ * Author: Ben Poile
+ * --------------------
+ *  Description: Print metadata about the current file being Listed by ls_dir
+ *  Params:      MINODE *mip    The inode object of the file we want metadata about
+ *               char *name     The path of the file we want metadata about
+ *  Returns: int    
+ *               0 if successful
+ */
+int ls_file(MINODE *mip, char *name) {
     int i;
     time_t time;
     char temp[64], l_name[128], buf[BLKSIZE];
 
     INODE *ip = &mip->inode;
-    putchar('\n');
+    putchar('\n'); // Start on new line
     
-    if ((ip->i_mode & 0xF000) == 0x8000) // is_reg
+    if ((ip->i_mode & 0xF000) == 0x8000)       // File is of standard type
         printf(" -");
-    else if ((ip->i_mode & 0xF000) == 0x4000) // is_dir
+    else if ((ip->i_mode & 0xF000) == 0x4000)  // File is of type directory
         printf(" d");
-    else if ((ip->i_mode & 0xF000) == 0xA000){ // is_link
+    else if ((ip->i_mode & 0xF000) == 0xA000){ // File is of type link
         printf(" l");
-        // get link file name
         get_block(mip->dev, mip->inode.i_block[0], buf);
         strcpy(l_name, buf);
         put_block(mip->dev, mip->inode.i_block[0], buf);
         l_name[strlen(l_name)] = 0;
     }
 
-    for (i=8; i >= 0; i--) // permissions
+    for (i = 8; i >= 0; i--) // permissions
         if (ip->i_mode & (1 << i))
             putchar(t1[i]);
         else
             putchar(t2[i]);
+
     putchar(' ');
 
-    printf("links:%d ", ip->i_links_count); // link count
-    printf("uid:%d ", ip->i_uid); // owner
-    printf("gid:%d ", ip->i_gid); // group
-    printf("%6dB ", ip->i_size); // byte size
+    printf("links: %d ", ip->i_links_count); // link count
+    printf("uid: %d ", ip->i_uid);           // Owner ID
+    printf("gid: %d ", ip->i_gid);           // Group ID
+    printf("%6dB ", ip->i_size);             // Size in bytes
     time = (time_t)ip->i_ctime;
     strcpy(temp, ctime(&time));
-    temp[strlen(temp)-1]=0;
-    printf("%s ", temp); // time
-    printf("name=%s", name); // name
+    temp[strlen(temp) - 1] = 0;
+    printf("%s ", temp);                     // The current time, calculated by finding the inode change time.
+    printf("[DEBUG] Name: %s", name);
 
-    //Once again looking for if it is directory
-    //SYMLINK
-    if ((ip->i_mode & 0xF000) == 0xA000){
+    if ((ip->i_mode & 0xF000) == 0xA000)     // Symbolic link handling
         printf(" -> %s (symlink)", l_name);
-    }else{
-        //printf("Not of Dir type\n");
-    }
 
     iput(mip);
     
     return 0;
 }
 
-int ls_dir(MINODE *mip)
-{
+/*
+ * Function: ls_dir
+ * Author: Ben Poile
+ * --------------------
+ *  Description: Recurse through a directory, printing information about each file.
+ *  Params:      MINODE *mip    The inode object of the folder we want to recurse through
+ *  Returns: int    
+ *               0 if successful
+ */
+int ls_dir(MINODE *mip) {
     char buf[BLKSIZE], temp[256], *cp;
     DIR *dp;
   
@@ -107,9 +124,8 @@ int ls_dir(MINODE *mip)
         strncpy(temp, dp->name, dp->name_len);
         temp[dp->name_len] = 0;
 	
-        //printf("[%d %s]  ", dp->inode, temp); // print [inode# name]
         MINODE *fmip = iget(dev, dp->inode);
-        fmip->dirty=0;
+        fmip->dirty = 0;
         ls_file(fmip, temp);
 
         cp += dp->rec_len;
@@ -123,50 +139,47 @@ int ls_dir(MINODE *mip)
     return 0;
 }
 
-//Algorithm for ls
-/*------------------------------
-How to ls: ls [pathname] lists the information of either a directory or a file.
-(1) ls_dir(dirname): use opendir() and readdir() to get filenames in the directory. For each filename,
-call ls_file(filename).
-(2) ls_file(filename): stat the filename to get file information in a STAT structure. Then list the STAT
-information.
-Since the stat system call essentially returns the same information of a minode, we can modify the
-original ls algorithm by using minodes directly. The following shows the modified ls algorithm
-(1). From the minode of a directory, step through the dir_entries in the data
-blocks of the minode.INODE. Each dir_entry contains the inode number, ino, and
-name of a file. For each dir_entry, use iget() to get its minode, as in
-MINODE *mip = iget(dev, ino);
-Then, call ls_file(mip, name).
-(2). ls_file(MINODE *mip, char *name): use mip->INODE and name to list the file
-information.
-*
-
-------------------------------*/
-int ls(char *pathname)  
-{
-    u32 *ino = malloc(32);
-    findino(running->cwd, ino);
+/*
+ * Function: ls
+ * Author: Ben Poile
+ * --------------------
+ *  Description: Lists the path given
+ *  Params:      char *pathname     The directory to list, as a string
+ *  Returns: int    
+ *               0 if successful
+ */
+int ls(char *pathname) {
+    u32 *ino = malloc(32);      // get ino value
+    findino(running->cwd, ino); // assign the ino object just created to the cwd
 
     if (strlen(pathname) > 0){
-        printf("path = %s\n", pathname);
+        printf("[DEBUG] Running ls on path: %s\n", pathname);
         *ino = getino(pathname);
-    } else {
-        printf("Default root path..\n");
     }
     
-    if (ino != 0)
+    if (ino != 0) // if the ino correlates to a valid file, ls it.
         ls_dir(iget(dev, *ino));
 
     return 0;
 }
 
+/*
+ * Function: rpwd
+ * Author: Ben Poile
+ * --------------------
+ *  Description: Recursively print the working directory
+ *  Params:      MINODE *mip    The directory recurse through
+ *  Returns: int    
+ *               0 if successful
+ */
 char *rpwd(MINODE *wd){
     MINODE *pip, *newmip;
     int p_ino=0, i;
     u32 ino;
     char my_name[256];
     MTABLE *mntptr;
-    if (wd == root) return 0;
+    if (wd == root) 
+        return 0;
 
     // if at root of other dev, must hop to root dev mount point
     if (wd->dev != root->dev && wd->ino == 2){
@@ -195,19 +208,28 @@ char *rpwd(MINODE *wd){
     return 0;
 }
 
+/*
+ * Function: pwd
+ * Author: Ben Poile
+ * --------------------
+ *  Description: Print the working directory
+ *  Params:      MINODE *mip    The directory to print
+ *  Returns: int    
+ *               0 if successful
+ */
 char *pwd(MINODE *wd){
     int cur_dev = dev;
 
     if (wd == root){
-        printf("pwd = /\n");
+        printf("PWD is /\n");
         return 0;
     }
-    printf("pwd = / ");
+
+    printf("PWD is /");
     rpwd(wd);
     putchar('\n');
 
-    // make sure dev is not changed
-    dev = cur_dev;
+    dev = cur_dev; // Ensure dev is set back to the current.
 
     return 0;
 }
