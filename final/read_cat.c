@@ -64,16 +64,16 @@ int myread(int fd, char *buf, int nbytes){
         } else if (lblk >= 12 && lblk < 256 + 12){ // indirect blocks
             //printf("[DEBUG] in myread(): indirect block\n");
 
-            get_block(mip->dev, mip->inode.i_block[12], (char*)ibuf); // from book
-            blk = ibuf[lblk-12];
+            get_block(mip->dev, mip->inode.i_block[12], (char*)ibuf); // indirect block
+            blk = ibuf[lblk - 12]; // Solve for blk value of the direct block
         } else {
             //printf("[DEBUG] in myread(): double indirect block\n");
             lblk -= 268;
             int buf13[256];
-            get_block(mip->dev, mip->inode.i_block[13], (char*)buf13);
+            get_block(mip->dev, mip->inode.i_block[13], (char*)buf13); //double indirect
             dblk = buf13[lblk/256];
-            get_block(mip->dev, dblk, (char*)dbuf);
-            blk = dbuf[lblk % 256];
+            get_block(mip->dev, dblk, (char*)dbuf); // indirect block 
+            blk = dbuf[lblk % 256]; // Solve for blk value of the direct block
         }
 
         get_block(mip->dev, blk, readbuf);
