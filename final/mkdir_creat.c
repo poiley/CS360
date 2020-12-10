@@ -6,14 +6,23 @@
 
 #include "commands.h"
 
-int make_dir(char *pathname){
+/* Function:    make_dir 
+ * Author:      Lovee Baccus
+ * --------------------
+ * Description: creates a directory -- adds a directory to the file tree              
+ * Params:      char *pathname      pathname as string 
+ * Returns:     the iNode value of the file or 0 if failed
+ */
+int make_dir(char *pathname) {
     char *path, *name, cpy[128];
     int pino, r, dev;
     MINODE *pmip;
 
-    strcpy(cpy, pathname); // dirname/basename destroy pathname, must make copy
+    // need a copy for modification purposes
+    strcpy(cpy, pathname); 
 
-    if (abs_path(pathname)==0){
+    // verifies if we are at the root or in a current working directory
+    if (abs_path(pathname)==0) {
         pmip = root;
         dev = root->dev;
     } else {
@@ -21,12 +30,15 @@ int make_dir(char *pathname){
         dev = running->cwd->dev;
     }
 
+    // parsing the pathname
     path = dirname(cpy);
     name = basename(pathname);
 
+    // initializing the miNode object
     pino = getino(path);
     pmip = iget(dev, pino);
 
+    // verifies permissions
     if(!maccess(pmip, 'w'))
     {
          printf("FAILED\n");
@@ -34,6 +46,8 @@ int make_dir(char *pathname){
         return 0;
     }
     
+    // using mymkdir to create the directorry and store the miNode in it
+    // and adding that directory to the file tree in the appropriate place
     if ((pmip->inode.i_mode & 0xF000) == 0x4000){ // is_dir
         printf("pmip must be dir\n");
         if (search(pmip, name)==0){ // if can't find child name in start MINODE
@@ -56,6 +70,15 @@ int make_dir(char *pathname){
     return 0;
 }
 
+/* Function:    mymkdir 
+ * Author:      Lovee Baccus
+ * --------------------
+ * Description: creates a directory memory block
+ *              helper function for make_dir
+ * Params:      char *pip       the miNode that we are putting into the directory that we are creating
+ *              char *name      name of directory to be created
+ * Returns:     the iNode value of the file or 0 if failed
+ */
 int mymkdir(MINODE *pip, char *name){
     char buf[BLKSIZE], *cp;
     DIR *dp;
@@ -82,7 +105,7 @@ int mymkdir(MINODE *pip, char *name){
 
     for (i=1; i <= 14; i++)
         ip->i_block[i] = 0;
-    //write mip to disk
+    // write mip to disk
     // make dirty
     mip->dirty = 1; 
     
@@ -111,7 +134,19 @@ int mymkdir(MINODE *pip, char *name){
     return 0;
 }
 
-int enter_name(MINODE *pip, int myino, char *myname){
+/* Function:    enter_name 
+ * Author:      Lovee Baccus
+ * --------------------
+ * Description: Adds the newly created folder to the list of the parent directory's Children, 
+ *              thus becoming a part of the file system tree.
+ *              its not enought for the new node to be aware of itself, the surrounding generations 
+ *              need to know it exists, so we go up a level 
+ * Params:      miNode *pip     parent directory
+ *              int myino       ino of the child directory
+ *              char *myname    name of child directory
+ * Returns:     int 0 if successful
+ */
+int enter_name(MINODE *pip, int myino, char *myname) {
     char buf[BLKSIZE], *cp, temp[256];
     DIR *dp;
     int block_i, i, ideal_len, need_len, remain, blk;
@@ -145,7 +180,7 @@ int enter_name(MINODE *pip, int myino, char *myname){
         printf("ideal_len=%d\n", ideal_len);
         remain = dp->rec_len - ideal_len;
 
-        if (remain >= need_len){
+        if (remain >= need_len) {
             dp->rec_len = ideal_len; // trim last rec_len to ideal_len
 
             cp += dp->rec_len;
@@ -164,7 +199,15 @@ int enter_name(MINODE *pip, int myino, char *myname){
     return 0;
 }
 
-int creat_file(char *pathname){
+/* Function:    creat_file 
+ * Author:      Lovee Baccus
+ * --------------------
+ * Description: adds a file  to the file system, assuming it doesn't already exist 
+ *              same thing as make_dir, but for files not directories
+ * Params:      char *pathname      pathname string
+ * Returns:     flag int indicating success
+ */
+int creat_file(char *pathname) {
     char *path, *name, cpy[128];
     int pino, r, dev;
     MINODE *pmip;
@@ -213,7 +256,16 @@ int creat_file(char *pathname){
     return 0;
 }
 
-int mycreat(MINODE *pip, char *name){
+/* Function:    mycreat 
+ * Author:      Lovee Baccus
+ * --------------------
+ * Description: creates a file in memory
+ *              helper function for creat_file()
+ * Params:      miNode *pip     the miNode that we are putting into the file that we are creating
+ *              char *name      name of the file to create
+ * Returns:     flag int indicating success
+ */
+int mycreat(MINODE *pip, char *name) {
     MINODE *mip;
     INODE *ip;
     int ino = ialloc(dev);

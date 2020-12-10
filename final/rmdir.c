@@ -5,18 +5,25 @@
  */
 #include "commands.h"
 
-//Assume command line rmdir (pathname)
+
+/* Function:    rm_child 
+ * Author:      Lovee Baccus
+ * --------------------
+ * Description: removes a directory from the file system          
+ * Params:      char *pathname      the pathname of the directory to be deleted
+ * Returns:     flag int indicating success
+ */
 int rm_dir(char *pathname){
     DIR *dp;
     char buf[BLKSIZE], name[256], temp[256], *cp;
     MINODE *mip, *pmip;
     int i, ino, pino;
 
+    // for string manipulation
     strcpy(temp, pathname);
 
     ino = getino(pathname);
-    if(ino == -1)
-    {
+    if(ino == -1) {
         printf("Error\n");
         return 0;
     }
@@ -24,8 +31,6 @@ int rm_dir(char *pathname){
 
     findmyname(mip, ino, name);
     printf("path=%s pino=%d parent name=%s\n", pathname, mip->ino, name);
-
-    //show(mip); not working for some reason?
 
     printf("running->uid=%d ", running->uid);
     printf("ino->i_uid=%d\n", mip->inode.i_uid);
@@ -92,12 +97,28 @@ int rm_dir(char *pathname){
     return 0;
 }
 
-int rm_child(MINODE *pmip, char *name){
+/* Function:    rm_child 
+ * Author:      Lovee Baccus
+ * --------------------
+ * Description: identifiesthe parents when a child node is deleted -- 
+ *              enter_name tells the parent when a child is created, this is the inverse 
+ *              controls context when something is deleted
+ *              pg 338 
+ *              search the parents INODE's data block for the child
+ *              delete the chaild from paraent directory
+ *                  if its the first data entry, then delete it and shrink size
+ *                  if its the last, then just yeet it and add its length to the previous entry
+ *                  if its in the middle, delete it and shift all te other entries over to account for that
+ * Params:      miNode *pmip
+ *              char *name      name string 
+ * Returns:     0 indicates successful run
+ */
+int rm_child(MINODE *pmip, char *name) {
     char buf[BLKSIZE], *cp, *rm_cp, temp[256];
     DIR *dp;
     int block_i, i, j, size, last_len, rm_len;
 
-    for (i=0; i<pmip->inode.i_blocks; i++){
+    for (i=0; i<pmip->inode.i_blocks; i++) {
         if (pmip->inode.i_block[i]==0) break;
         get_block(pmip->dev, pmip->inode.i_block[i], buf);
         printf("get_block i=%d\n", i);
@@ -109,11 +130,11 @@ int rm_child(MINODE *pmip, char *name){
         i=0;
         j=0;
 
-        while (cp + dp->rec_len < buf + BLKSIZE){
+        while (cp + dp->rec_len < buf + BLKSIZE) {
             strncpy(temp, dp->name, dp->name_len);
             temp[dp->name_len] = 0;
 
-            if (!strcmp(name, temp)){
+            if (!strcmp(name, temp)) {
                 i=j;
                 rm_cp = cp;
                 rm_len = dp->rec_len;
@@ -133,7 +154,7 @@ int rm_child(MINODE *pmip, char *name){
         printf("[%d %s]\n", dp->rec_len, temp);
         printf("block_i=%d\n", block_i);
 
-        if (j==0){ // first entry
+        if (j==0) { // first entry
             printf("First entry!\n");
 
             printf("deallocating data block=%d\n", block_i);
@@ -162,7 +183,6 @@ int rm_child(MINODE *pmip, char *name){
 
         put_block(pmip->dev, pmip->inode.i_block[block_i], buf);
     }
-
 
     return 0;
 }
