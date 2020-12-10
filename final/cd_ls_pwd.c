@@ -90,7 +90,7 @@ int ls_file(MINODE *mip, char *name) {
     printf("%s ", temp);                     // The current time, calculated by finding the inode change time.
     printf("Name: %s", name);
 
-    if ((ip->i_mode & 0xF000) == 0xA000)     // Symbolic link handling
+    if (S_ISLNK(ip->i_mode) != 0)     // Symbolic link handling
         printf(" -> %s (symlink)", l_name);
 
     iput(mip);
@@ -225,7 +225,7 @@ char *pwd(MINODE *wd){
         return 0;
     }
 
-    printf("PWD is /");
+    printf("PWD is ");
     rpwd(wd);
     putchar('\n');
 

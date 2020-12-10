@@ -20,7 +20,7 @@ int open_file(char *pathname, char *mode){
     MINODE *mip;
     int i, ino, i_mode = atoi(mode);
 
-    printf("[DEBUG] in open_file(): i_mode: %d\n", i_mode);
+    printf("[DEBUG] in open_file(): Reading %s in mode %d\n", pathname, i_mode);
 
     if (abs_path(pathname) == 0)
         dev = root->dev;
@@ -48,7 +48,7 @@ int open_file(char *pathname, char *mode){
         for (i = 0; i < NFD; i++) {
             if (running->fd[i] != NULL && running->fd[i]->minodePtr == mip) {
                 if (running->fd[i]->mode > 0) {
-                    printf("[DEBUG] in open_file(): %s is already open!\n\n", pathname);
+                    printf("[DEBUG] in open_file(): %s is already open!\n", pathname);
                     return -1;
                 }
             } else 
@@ -93,6 +93,7 @@ int open_file(char *pathname, char *mode){
 
     mip->dirty = 1;
 
+    printf("[DEBUG] in open_file(): opened file with descriptor value of %d\n", i);
     return i; // return fd i
 }
 

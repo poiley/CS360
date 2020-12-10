@@ -26,24 +26,27 @@ int link_file(char *pathname, char *linkname) {
     // otherwise we would be trying to give something that doesn't exist a nickname
     int oino = getino(pathname);
     if(oino == 0) {
-        printf("Original File does not exist\n");
+        printf("[DEBUG] in link_file(): Original file does not exist\n");
         return -1;
     }
 
     // verifying if the pathname is a directory, if it is then we break
     MINODE *omip = iget(dev, oino);
-    printf("parent ino = %d \n\n\n", oino);
+    printf("[DEBUG] in link_file(): parent ino: %d \n", oino);
     if(S_ISDIR(omip->inode.i_mode)) {
-        printf("Original Path is Directory: NOT ALLOWED\n");
+        printf("[ERROR] in link_file(): Original Path is a directory.\n");
         return -1;
     }
 
     // verify if 'nickname' already exists, if it does we can end here
     strcpy(cpy, linkname);
-    if(getino(linkname)) {
-        printf("File already exists\n");
+    printf("[DEBUG] in link_file(): linkname: %s\n", linkname);
+    printf("[DEBUG] in link_file(): ino: %d\n", getino(linkname));
+    if (getino(linkname) != -1) {
+        printf("[ERROR] in link_file(): File already exists.\n");
         return -1;
     }
+
     char* parent = dirname(linkname);
     char *child = basename(cpy);
 
@@ -80,7 +83,7 @@ int unlink_file(char *filename) {
     int ino = getino(filename);
     
     if(ino <= 0) { // validates that the file given exists
-        printf("[unlink]: File does not exist\n");
+        printf("[DEBUG] in unlink_file(): File does not exist.\n");
         return -1;
     }
 
@@ -88,7 +91,7 @@ int unlink_file(char *filename) {
     // aka the ownership stands or user is a superuser
     MINODE *mip = iget(dev,ino);
     if(running->uid != mip->inode.i_uid || running->uid != 0) {
-        printf("[unlink]: Permission Denied\n");
+        printf("[DEBUG] in unlink_file(): Permission Denied.\n");
         return -1;
     }
     
