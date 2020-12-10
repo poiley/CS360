@@ -6,23 +6,30 @@
 
 #include "commands.h"
 
+/*
+ * Function: cp_file
+ * Author: Ben Poile
+ * --------------------
+ *  Description: Copies file from source directory to destination directory
+ *  Params:      char   *src    File to copy
+ *               char  *dest    Destination to copy to
+ *  Returns: int    
+ *               0 if successful
+ */
 int cp_file(char *src, char *dest) {
-    int n = 0;
+    int n = 0, fd = open_file(src, "0"), gd = open_file(dest, "1");
     char buf[BLKSIZE];
-    int fd = open_file(src, "0");
-    int gd = open_file(dest, "1");
 
     buf[BLKSIZE] = 0; // terminate it
 
     if(gd < 0) {
-        printf("Creating File\n");
+        printf("[DEBUG] in cp_file(): Creating file %s\n", dest);
         creat_file(dest);
         gd = open_file(dest, "1");;
     }
-    //Need read to complete
-    while((n = myread(fd, buf, BLKSIZE))) {
+    
+    while((n = myread(fd, buf, BLKSIZE))) //Need read to complete
         mywrite(gd, buf, n);
-    }
     
     close_file(fd);
     close_file(gd);

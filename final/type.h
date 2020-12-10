@@ -20,6 +20,7 @@ typedef struct ext2_super_block SUPER;
 typedef struct ext2_inode       INODE;
 typedef struct ext2_dir_entry_2 DIR;
 #define BLKSIZE     1024
+#define MAXNAME     128 //max length of a name
 
 SUPER *sp;
 GD    *gp;

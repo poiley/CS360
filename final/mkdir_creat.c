@@ -50,7 +50,7 @@ int make_dir(char *pathname) {
     // and adding that directory to the file tree in the appropriate place
     if ((pmip->inode.i_mode & 0xF000) == 0x4000){ // is_dir
         printf("pmip must be dir\n");
-        if (search(pmip, name)==0){ // if can't find child name in start MINODE
+        if (search(pmip, name) == 0){ // if can't find child name in start MINODE
             r = mymkdir(pmip, name);
             pmip->inode.i_links_count++; // increment link count
             pmip->inode.i_atime = time(0L); // touch atime
@@ -199,64 +199,65 @@ int enter_name(MINODE *pip, int myino, char *myname) {
     return 0;
 }
 
-/* Function:    creat_file 
+/* 
+ * Function:    creat_file 
  * Author:      Lovee Baccus
  * --------------------
- * Description: adds a file  to the file system, assuming it doesn't already exist 
- *              same thing as make_dir, but for files not directories
- * Params:      char *pathname      pathname string
- * Returns:     flag int indicating success
+ * Description: Creates a new file and adds it to the filesystem, assuming it doesn't already exist 
+ * Params:      char *pathname      The pathname of the file to be created, as a string
+ * Returns:     int
+ *                  result for a successful run, where result represents the inode value of the created file.
+ *                      -1 for a failed run
  */
 int creat_file(char *pathname) {
-    char *path, *name, cpy[128];
-    int pino, r, dev;
-    MINODE *pmip;
+    printf("[DEBUG] in creat_file(): pathname is %s\n", pathname);
+    if (!pathname[0]) { //if path is null then display error and return fail
+        printf("[ERROR] in creat_file(): path name not specified\n");
+        return -1;
+    }
 
-    strcpy(cpy, pathname); // dirname/basename destroy pathname, must make copy
-
-    if (abs_path(pathname)==0){
-        pmip = root;
+    if (pathname[0] == '/') //initialize device depending on absolute or relative path
         dev = root->dev;
-    } else {
-        pmip = running->cwd;
+    else
         dev = running->cwd->dev;
-    }
 
-    path = dirname(cpy);
-    name = basename(pathname);
+    char *directory, *base;
 
-    printf("path=%s\n", path);
-    printf("filename=%s\n", name);
+    directory = dirname(pathname);
+    base = basename(pathname);
 
-    pino = getino(path);
-    pmip = iget(dev, pino);
-    
-    if(!maccess(pmip, 'w'))
-    {
-         printf("Failed to create file\n");
+    int pino = getino(directory); //detmine parent inode number
+    if (pino < 0)                       //if parent directory not found return fail
+        return -1;
+
+    MINODE *pmip = iget(dev, pino);   // get parent minode
+    if (!S_ISDIR(pmip->inode.i_mode)) { //if parent minode is not a directory display error and return fail
+        printf("[ERROR] in creat_file(): %s is not a directory\n", directory);
         iput(pmip);
-        return 0;
-    }
-    //Checking if is dir
-    if ((pmip->inode.i_mode & 0xF000) == 0x4000){ // is_dir
-        if (search(pmip, name)==0){ // if can't find child name in start MINODE
-            r = mycreat(pmip, name);
-            pmip->inode.i_atime = time(0L); // touch atime
-            pmip->dirty = 1; // make dirty
-            iput(pmip); // write to disk
-
-            printf("Successfully created file %s\n", pathname);
-            return r;
-        } else {
-            printf("Failed because file already exists\n");
-            iput(pmip);
-        }
+        return -1;
     }
 
-    return 0;
+    printf("[DEBUG] in creat_file(): Searching for '%s'.\n", base);
+    
+    if (search(pmip, base) != -1) { //if name already exists display error and return fail
+        printf("[ERROR] in creat_file(): %s already exists\n", base);
+        quit();
+        iput(pmip);
+        return -1;
+    }
+
+    pmip->inode.i_atime = time(0L); //update parent minode
+    pmip->dirty = 1;
+
+    int result = mycreat(pmip, base); //return the success or fail of creating the file
+
+    iput(pmip); //put parent minode back
+
+    return result;
 }
 
-/* Function:    mycreat 
+/* 
+ * Function:    mycreat 
  * Author:      Lovee Baccus
  * --------------------
  * Description: creates a file in memory
@@ -282,7 +283,7 @@ int mycreat(MINODE *pip, char *name) {
     ip->i_atime = ip->i_ctime = ip->i_mtime = time(0L); // set to current time
 
     mip->dirty = 1;
-    printf("write inode to the disk!\n");
+    printf("[DEBUG] in mycreat(): Successfully wrote inode to the disk!\n");
 
     enter_name(pip, ino, name);
 

@@ -18,35 +18,29 @@ int r;
 int get_block(int dev, int blk, char *buf){
     lseek(dev, (long)blk*BLKSIZE, 0);
     r = read(dev, buf, BLKSIZE);
-
     return r;
 }   
 
 int put_block(int dev, int blk, char *buf){
     lseek(dev, (long)blk*BLKSIZE, 0);
     r = write(dev, buf, BLKSIZE);
-
     return r;
 }   
 
 //FROM THE BOOK
 int tokenize(char *pathname){
-    printf("TOKENIZING %s...", pathname);
     int i;
     char *s;
-    strcpy(gline, pathname);   // tokens are in global gline[ ]
+
+    strcpy(gline, pathname); 
     nname = 0;
 
     s = strtok(gline, "/");
-    while(s){
-        name[nname++] = s;
+    while (s) {
+        name[nname] = s;
+        nname++;
         s = strtok(0, "/");
     }
-    for (i= 0; i<nname; i++)
-        printf("%s  ", name[i]);
-    printf("\n");
-
-    return 0;
 }
 
 MINODE *iget(int dev, int ino){
@@ -130,33 +124,25 @@ void iput(MINODE *mip){
 //FROM BOOK BUT EDITED HOW IT LOOKS 
 //SEARCH DIRECTORIES USING MINODE
 int search(MINODE *mip, char *name){
-    int i;
-    char *cp, temp[256], sbuf[BLKSIZE];
-    DIR *dp;
-    for(i=0; i<NMINODE;i++){
-        //We want directory blocks only
-        if(mip->inode.i_block[i] == 0)
-            return 0;
-        get_block(mip->dev, mip->inode.i_block[i], sbuf);
-        dp = (DIR *)sbuf;
-        cp = sbuf;
-        printf("Searching Directories...\n");
-        printf("inode rlen nlen name\n");
-        while (cp < sbuf + BLKSIZE){
-            strncpy(temp, dp->name, dp->name_len);
-            temp[dp->name_len] = 0;
-            printf("%3d%6d%5u    %s\n", dp->inode, dp->rec_len, dp->name_len, temp);
-            if (strcmp(name, temp)==0){
-                printf("\033[0;32m");
-                printf("\nFound %s with inode #%d\n", name, dp->inode);
-                printf("\033[0m");
-                return dp->inode;
-            }
-            cp += dp->rec_len;
-            dp = (DIR *)cp;
+    for (int dblk = 0; dblk < 12; dblk++) { //execute across all direct blocks within inode's inode table
+        if (!(mip->inode.i_block[dblk])) //if empty block found return fail
+            return -1;
+
+        char buf[BLKSIZE];
+        get_block(mip->dev, mip->inode.i_block[dblk], buf); //read a directory block from the inode table into buffer
+        DIR *dp = (DIR *)buf;                               //cast buffer as directory pointer
+
+        while ((char *)dp < &buf[BLKSIZE]) //execute while there is another directory struct ahead
+        {
+            if (!strncmp(dp->name, name, dp->name_len) //check if directory name matches name
+                && strlen(name) == dp->name_len)       //prevents . == ..
+                return dp->inode;                      //return inode number if found
+
+            dp = (char *)dp + dp->rec_len; //point to next directory struct within buffer
         }
-        return 0;
     }
+
+    return -1;
 }
 
 /*
@@ -169,46 +155,39 @@ int search(MINODE *mip, char *name){
  *             -1   for a failed run
  */
 int getino(char *pathname) {
+    int i, ino, blk, disp;
+    char buf[BLKSIZE];
+    INODE *ip;
     MINODE *mip;
-    int i, ino;
 
-    if (strcmp(pathname, "/")==0){
-    return 2;
-    // return root
-    }
-    if (pathname[0] == "/"){
+    if (strcmp(pathname, "/") == 0)
+        return 2;
+
+    // starting mip = root OR CWD
+    if (pathname[0] == '/')
         mip = root;
-    }
-    // if absolute
-    else{
+    else
         mip = running->cwd;
-    }
-    // if relative
-    mip->refCount++;
-    // in order to
+
+    mip->refCount++; // because we iput(mip) later
+
     tokenize(pathname);
-    iput(mip); 
-    // assume: name[ ], nname are globals
-    for (i=0; i<nname; i++){
-        // search for each component string
-        //S_ISDIR(mip->inode.i_mode in textbook, we need to prove it is not a Dir Type
-        if (!(mip->inode.i_mode & 0xF000) == 0x4000){ // check DIR type
-            printf("%s is not a directory\n", name[i]);
-            iput(mip);
-            return 0;
-        }
+
+    for (i = 0; i < nname; i++)
+    {
         ino = search(mip, name[i]);
-        if (!ino){
-            printf("no such component name %s\n", name[i]);
+
+        if (ino == 0)
+        {
             iput(mip);
+            // printf("name %s does not exist\n", name[i]);
             return 0;
         }
-        iput(mip);
-        // release current minode
-        mip = iget(dev, ino);
-    // switch to new minode
+        iput(mip);            // release current mip
+        mip = iget(dev, ino); // get next mip
     }
-    iput(mip);
+
+    iput(mip); // release mip
     return ino;
 }
     
@@ -286,8 +265,11 @@ int abs_path(char *path){
  *               0 if the bit is not in byte array
  */
 int tst_bit(char *buf, int bit){
-    if (buf[bit / 8] & (1 << bit % 8))
+    int i = bit / 8, j = bit % 8;
+
+    if (buf[i] & (1 << j))
         return 1;
+
     return 0;
 }
 
@@ -302,7 +284,10 @@ int tst_bit(char *buf, int bit){
  *               0 if successful
  */
 int set_bit(char *buf, int bit){
-    buf[bit / 8] |= (1 << bit % 8);
+    int i = bit / 8, j = bit % 8;
+
+    buf[i] |= (1 << j);
+
     return 0;
 }
 
@@ -317,7 +302,10 @@ int set_bit(char *buf, int bit){
  *               0 if successful
  */
 int clr_bit(char *buf, int bit){
-    buf[bit / 8] &= ~(bit % 8 << bit % 8);
+    int i = bit / 8, j = bit % 8;
+
+    buf[i] &= ~(1 << j);
+
     return 0;
 }
 

@@ -88,7 +88,7 @@ int ls_file(MINODE *mip, char *name) {
     strcpy(temp, ctime(&time));
     temp[strlen(temp) - 1] = 0;
     printf("%s ", temp);                     // The current time, calculated by finding the inode change time.
-    printf("[DEBUG] Name: %s", name);
+    printf("Name: %s", name);
 
     if ((ip->i_mode & 0xF000) == 0xA000)     // Symbolic link handling
         printf(" -> %s (symlink)", l_name);
@@ -116,7 +116,7 @@ int ls_dir(MINODE *mip) {
     dp = (DIR *)buf;
     cp = buf;
 
-    printf("mip->ino = %d\n", mip->ino);
+    printf("[DEBUG] in ls_dir(): mip->ino: %d\n", mip->ino);
     if (mip->ino == 0)
         return 0;
   

@@ -203,9 +203,9 @@ int main(int argc, char *argv[ ]) {
             lseek_file(atoi(src), atoi(dest));
         else if (strcmp(cmd, "cp") == 0)
             cp_file(src, dest);
-        else if (strcmp(cmd, "mv"))
+        else if (strcmp(cmd, "mv") == 0)
             mv_file(src, dest);
-        else if(strcmp(cmd, "write"))
+        else if (strcmp(cmd, "write") == 0)
             write_file();
         else if (strcmp(cmd, "quit") == 0 || strcmp(cmd, "q") == 0)
             quit();

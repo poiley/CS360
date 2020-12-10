@@ -5,21 +5,27 @@
  */
 #include "commands.h"
 
-int mv_file(char *src, char *dest)
-{
+/*
+ * Function: mv_file
+ * Author: Ben Poile
+ * --------------------
+ *  Description: Moves file from source directory to destination directory
+ *  Params:      char   *src    File to copy
+ *               char  *dest    Destination to copy to
+ *  Returns: int    
+ *               0 if successful
+ */
+int mv_file(char *src, char *dest) {
+    printf("[DEBUG] in mv_file(): Starting mv\n");
+
     int sfd = open_file(src, "0");
     MINODE *mip = running->fd[sfd]->minodePtr;
-    // Same Dev link then remove src
-    if(mip->dev == sfd)
-    {
-        printf("\n\nSame Dev\n\n\n\n");
+    if(mip->dev == sfd) { // Same Dev link then remove src
+        printf("[DEBUG] in mv_file(): Same dev, linking %s to %s\n", src, dest);
         link_file(src, dest);
         unlink_file(src);
-    }
-    // Different dev use cp
-    else
-    {
-        printf("Different Dev\n");
+    } else { // Different dev use cp
+        printf("[DEBUG] in mv_file(): Different dev, copying %s to %s\n", src, dest);
         cp_file(src, dest);
         unlink_file(src);
     }

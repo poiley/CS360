@@ -18,8 +18,7 @@ extern int dev, imap, bmap, ninodes, nblocks;
  * Returns:     flag integer variable indicating sucess
  *
  */
-int link_file(char *pathname, char *linkname)
-{
+int link_file(char *pathname, char *linkname) {
     char cpy[40];
     strcpy(cpy, pathname);
 
@@ -75,19 +74,17 @@ int link_file(char *pathname, char *linkname)
  * Returns:     flag integer variable indicating sucess
  *
  */
-int unlink_file(char *filename)
-{
+int unlink_file(char *filename) {
     char cpy[128];
     strcpy(cpy, filename);
     int ino = getino(filename);
     
-    // validates that the file given exists
-    if(ino <= 0){
+    if(ino <= 0) { // validates that the file given exists
         printf("[unlink]: File does not exist\n");
         return -1;
     }
 
-    // verifies that the user has the authority to delete a link
+    // Verifies that the user has the authority to delete a link
     // aka the ownership stands or user is a superuser
     MINODE *mip = iget(dev,ino);
     if(running->uid != mip->inode.i_uid || running->uid != 0) {

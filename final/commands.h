@@ -5,7 +5,6 @@
 
 #include "util.h"
 
-
 // Declares but does not define Global Variables for usage in main and utility functions
 extern MINODE minode[NMINODE], *root;
 extern PROC proc[NPROC], *running;
@@ -39,10 +38,8 @@ int rm_child(MINODE *pmip, char *name);
 // symlink.c
 int sym_link(char *src, char *dest);
 
-// link.c
+// link_unlike.c
 int link_file(char *pathname, char *linkname);
-
-// unlink.c
 int unlink_file(char *filename);
 
 //open_close_lseek.c
@@ -56,6 +53,12 @@ int myread(int fd, char*buf, int bytes);
 int cat_file(char *pathname);
 
 //write.c
-int write_File();
-int mywrtie(int fd, char *buf, int nbytes);
+int write_file();
+int mywrite(int fd, char *buf, int nbytes);
+
+//cp.c
+int cp_file(char *src, char *dest);
+
+//mv.c
+int mv_file(char *src, char *dest);
 
