@@ -48,4 +48,6 @@ int pfd();
 int faccess(char *pathname, char mode);
 int maccess(MINODE *mip, char mode);
 
+int smallest(int a, int b, int c);
+
 #endif

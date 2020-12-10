@@ -159,11 +159,16 @@ int search(MINODE *mip, char *name){
     }
 }
 
-//From book but had to find whether it was directory or not
-//we used same implementation as in the given ls_file code by
-//checking that (inode.i_mode & 0xF000) == 0x4000
-int getino(char *pathname)
-{
+/*
+ * Function: getino 
+ * Author: Ben Poile
+ * --------------------
+ *  Description: Returns the inode value of the given path
+ *  Params:      char* pathname     The pathname of the desired file
+ *  Return: int i   The inode value of the file
+ *             -1   for a failed run
+ */
+int getino(char *pathname) {
     MINODE *mip;
     int i, ino;
 
@@ -229,12 +234,20 @@ int findmyname(MINODE *parent, u32 myino, char *myname){
     return 0;
 }
 
-//find ino of the MINODE structure from entry in "INODE.i_block[0]"
-int findino(MINODE *mip, u32 *myino){ // myino = ino of . return ino of ..
+/*
+ * Function: findino 
+ * Author: Ben Poile
+ * --------------------
+ *  Description: Returns the inode value of the parent 
+ *  Params:      MINODE* mip     A struct of the current working directory
+ *               u32   myino     The current working directory's ino
+ *  Return: int
+ *               dp->inode       The inode value of the parent directory
+ */
+int findino(MINODE *mip, u32 *myino) {
     char buf[BLKSIZE], *cp;   
     DIR *dp;
 
-    //We take the mip pass in it's ->dev and "INODE.i_block[0]" get_block
     get_block(mip->dev, mip->inode.i_block[0], buf);
     cp = buf; 
     dp = (DIR *)buf;
@@ -244,32 +257,16 @@ int findino(MINODE *mip, u32 *myino){ // myino = ino of . return ino of ..
     return dp->inode;
 }
 
-
-int show(MINODE *mip){
-    DIR *dp;
-    char buf[BLKSIZE], name[256], *cp;
-    INODE *ip = &(mip->inode);
-
-    get_block(mip->dev, ip->i_block[0], buf);
-    cp = buf;
-    dp = (DIR*)cp;
-
-    printf("\ninode\trec_len\tname_len\tname\n========================================\n");
-    while (cp < buf + BLKSIZE){
-        strncpy(name, dp->name, dp->name_len);
-        name[dp->name_len]=0;
-
-        printf("%1d\t%1d\t%1d\t%s\n", dp->inode, dp->rec_len, dp->name_len, name);
-
-        cp += dp->rec_len;
-        dp = (DIR*)cp;
-    }
-    putchar('\n');
-
-    return 0;
-}
-
-// LEVEL 1
+/*
+ * Function: abs_path 
+ * Author: Ben Poile
+ * --------------------
+ *  Description: Determines if the path is absolute or relative
+ *  Params:      char *path      The path to be read in       
+ *  Return: int
+ *               0 if the path is absolute
+ *              -1 if the path is relative
+ */
 int abs_path(char *path){
     if (path[0] == '/')
         return 0;
@@ -277,32 +274,63 @@ int abs_path(char *path){
         return -1;
 }
 
+/*
+ * Function: tst_bit 
+ * Author: Lovee Baccus
+ * --------------------
+ *  Description: Tests the bit value within the byte array
+ *  Params:      char  *buf      Byte array
+ *               int    bit      Bit location  
+ *  Return: int
+ *               1 if the bit is in byte array
+ *               0 if the bit is not in byte array
+ */
 int tst_bit(char *buf, int bit){
-    int i = bit / 8, j = bit % 8;
-
-    if (buf[i] & (1 << j))
+    if (buf[bit / 8] & (1 << bit % 8))
         return 1;
-
     return 0;
 }
 
+/*
+ * Function: set_bit 
+ * Author: Lovee Baccus
+ * --------------------
+ *  Description: Sets the bit value within the byte array
+ *  Params:      char  *buf      Byte array
+ *               int    bit      Bit location  
+ *  Return: int
+ *               0 if successful
+ */
 int set_bit(char *buf, int bit){
-    int i = bit / 8, j = bit % 8;
-
-    buf[i] |= (1 << j);
-
+    buf[bit / 8] |= (1 << bit % 8);
     return 0;
 }
 
+/*
+ * Function: clr_bit 
+ * Author: Lovee Baccus
+ * --------------------
+ *  Description: Clears the bit value within the byte array
+ *  Params:      char  *buf      Byte array
+ *               int    bit      Bit location  
+ *  Return: int
+ *               0 if successful
+ */
 int clr_bit(char *buf, int bit){
-    int i = bit / 8, j = bit % 8;
-
-    buf[i] &= ~(1 << j);
-
+    buf[bit / 8] &= ~(bit % 8 << bit % 8);
     return 0;
 }
 
-int dec_free_inodes(int dev){
+/*
+ * Function: dec_free_inodes 
+ * Author: Lovee Baccus
+ * --------------------
+ *  Description: Decrease the amount of free iNodes on the device
+ *  Params:      int    dev      File descriptor of device
+ *  Return: int
+ *               0 if successful
+ */
+int dec_free_inodes(int dev) {
     char buf[BLKSIZE];
 
     get_block(dev, 1, buf); // dec the super table
@@ -318,6 +346,15 @@ int dec_free_inodes(int dev){
     return 0;
 }
 
+/*
+ * Function: dec_free_blocks 
+ * Author: Lovee Baccus
+ * --------------------
+ *  Description: Decrease the amount of free blocks on the device
+ *  Params:      int    dev      File descriptor of device
+ *  Return: int
+ *               0 if successful
+ */
 int dec_free_blocks(int dev){
     char buf[BLKSIZE];
 
@@ -334,6 +371,15 @@ int dec_free_blocks(int dev){
     return 0;
 }
 
+/*
+ * Function: inc_free_inodes 
+ * Author: Lovee Baccus
+ * --------------------
+ *  Description: Increase the amount of free inodes on the device
+ *  Params:      int    dev      File descriptor of device
+ *  Return: int
+ *               0 if successful
+ */
 int inc_free_inodes(int dev){
     char buf[BLKSIZE];
 
@@ -350,6 +396,15 @@ int inc_free_inodes(int dev){
     return 0;
 }
 
+/*
+ * Function: inc_free_blocks 
+ * Author: Lovee Baccus
+ * --------------------
+ *  Description: Increase the amount of free blocks on the device
+ *  Params:      int    dev      File descriptor of device
+ *  Return: int
+ *               0 if successful
+ */
 int inc_free_blocks(int dev){
     char buf[BLKSIZE];
 
@@ -366,6 +421,7 @@ int inc_free_blocks(int dev){
     return 0;
 }
 
+// Allocate inode on device file descriptor
 int ialloc(int dev){
     int i;
     char buf[BLKSIZE];
@@ -384,6 +440,7 @@ int ialloc(int dev){
     return 0;
 }
 
+// deallocate inode on device file descriptor
 int idalloc(int dev, int ino){
     char buf[BLKSIZE];
 
@@ -402,6 +459,7 @@ int idalloc(int dev, int ino){
     return 0;
 }
 
+// allocate block on device file descriptor
 int balloc(int dev){
     int i;
     char buf[BLKSIZE];
@@ -420,7 +478,7 @@ int balloc(int dev){
     return 0;
 }
 
-// potential issue here, deallocating to wrong blk?
+// deallocate block on device file descriptor
 int bdalloc(int dev, int blk){
     char buf[BLKSIZE];
 
@@ -439,18 +497,27 @@ int bdalloc(int dev, int blk){
     return 0;
 }
 
-// level 2 functions
-int pfd(){
+// Level 2 functions
+
+/*
+ * Function: pfd 
+ * Author: Ben Poile
+ * --------------------
+ *  Description: Print the file descriptors of each open file.
+ *  Params: void
+ *  Return: int
+ *                  0 on succesful run
+ */
+int pfd() {
     int i;
-    printf("\n[pfd]:    fd  mode    offset  INODE\n");
-    printf("[pfd]:  ----    ------  --------    -------\n");
-    for(i=0; i<NFD; i++)
-    {
+    printf("\n[DEBUG] in pfd():    fd    mode    offset   INODE\n");
+    printf(  "[DEBUG] in pfd():   ----  ------  -------- -------\n");
+    for(i = 0; i < NFD; i++) {
         if(running->fd[i]){
             OFT *cur = running->fd[i];
             char mode[8];
 
-            switch(cur->mode){
+            switch(cur->mode) {
                 case 0:
                     strcpy(mode, "READ"); break;
                 case 1:
@@ -460,8 +527,7 @@ int pfd(){
                 case 3:
                     strcpy(mode, "APPEND"); break;
             }
-
-            printf("[pfd]: %d %6s %4d   [%d, %d]\n", i, mode, cur->minodePtr->dev, cur->minodePtr->ino);
+            printf(  "[DEBUG] in pfd():    %d %6s %4d   [%d, %d]\n", i, mode, cur->minodePtr->dev, cur->minodePtr->ino);
         }else
             break; //no more open fds
     }
@@ -470,8 +536,18 @@ int pfd(){
     return 0;
 }
 
-int faccess(char *pathname, char mode)
-{
+/*
+ * Function: faccess 
+ * Author: Ben Poile
+ * --------------------
+ *  Description: Check if a file is accessible in a given mode given the pathname as a string
+ *  Params:  char *pathname     The pathname of the file to check
+ *           char     *mode     The mode to open the file with
+ *  Return: int
+ *                  0 on succesful run
+ *                 -1 on failed run
+ */
+int faccess(char *pathname, char mode) {
     char t1[9] = "xwrxwrxwr", t2[9] = "---------";
     char permi[9];
     int offset = 0;
@@ -479,40 +555,46 @@ int faccess(char *pathname, char mode)
     MINODE *mip = iget(dev,ino);
     INODE *ip = &mip->inode;
 
-    for (int i=8; i >= 0; i--) // permissions
+    for (int i = 8; i >= 0; i--) // permissions
         if (ip->i_mode & (1 << i))
             permi[i]=t1[i];
         else
             permi[i]='-';
     
-    //printf("\npermission %s\n", permi);
     if(mode == 'w')
         offset = 1;
     if(mode == 'x')
         offset = 2;
 
-    // Super User
+    // Sudo
     if(running->uid ==0)
         return 1;
 
-    // Owner
-    if(ip->i_uid == running->uid)
+    if(ip->i_uid == running->uid) // Owner
         if(mode == permi[offset])
             return 1;
-    // Same group
-    else if(ip->i_gid == running->gid)
+    else if(ip->i_gid == running->gid) // Same group
         if(mode == permi[offset + 3])
             return 1;
-    // Other
-    else
+    else // Other
         if(mode == permi[offset + 6])
             return 1;
 
     return 0;
 }
 
-int maccess(MINODE *mip, char mode)
-{
+/*
+ * Function: faccess 
+ * Author: Ben Poile
+ * --------------------
+ *  Description: Check if a file is accessible in a given mode given the inode struct
+ *  Params:  MINODE *pathname     The pathname of the file to check
+ *           char        mode     The mode to open the file with
+ *  Return: int
+ *                  0 on succesful run
+ *                 -1 on failed run
+ */
+int maccess(MINODE *mip, char mode) {
     char t1[9] = "xwrxwrxwr", t2[9] = "---------";
     char permi[9];
     int offset = 0;
@@ -524,28 +606,41 @@ int maccess(MINODE *mip, char mode)
         else
             permi[i]='-';
     
-    //printf("\npermission %s\n", permi);
     if(mode == 'w')
         offset = 1;
     if(mode == 'x')
         offset = 2;
 
-     // Super User
+    // Sudo
     if(running->uid ==0)
-        return 1;    
+        return 1;
 
-    // Owner
-    if(ip->i_uid == running->uid)
+    if (ip->i_uid == running->uid) // Owner
         if(mode == permi[offset])
             return 1;
-    // Group
-    else if(ip->i_gid == running->gid)
+    else if(ip->i_gid == running->gid) // Group
         if(mode == permi[offset + 3])
             return 1;
-    // Other
-    else
+    else // Other
         if(mode == permi[offset + 6])
             return 1;
 
     return 0;
+}
+
+/*
+ * Function: smallest 
+ * Author: Ben Poile
+ * --------------------
+ *  Description: Find the smallest number out of three integers
+ *  Params: int a, b, c 
+ *  Return: int The smallest of the three
+ */
+int smallest(int a, int b, int c) {
+    if (a <= b && a <= c)
+        return a;
+    else if (b <= c && b <= a)
+        return b;
+    else
+        return c;
 }

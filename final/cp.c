@@ -20,7 +20,7 @@ int cp_file(char *src, char *dest) {
         gd = open_file(dest, "1");;
     }
     //Need read to complete
-    while((n = myread(fd, buf, BLKSIZE, 0))) {
+    while((n = myread(fd, buf, BLKSIZE))) {
         mywrite(gd, buf, n);
     }
     

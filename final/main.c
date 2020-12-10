@@ -156,7 +156,7 @@ int main(int argc, char *argv[ ]) {
     proc[1].status = FREE;
     
     while(1) {
-        printf("Running Process %d - Available Commands: \n\tls | cd | pwd | mkdir | rmdir | creat | symlink | link | unlink | open | read | lseek | pfd | write | close | cat | cp | mv | quit] \n", running->uid);
+        printf("Running Process %d - Available Commands: \n[ ls | cd | pwd | mkdir | rmdir  | creat | symlink | link | unlink ]\n[ open | read | lseek | pfd | write | close | cat | cp | mv | quit ] \n", running->uid);
         printf("user@FinalProject ~> ");
         
         fgets(line, 128, stdin);
@@ -194,7 +194,7 @@ int main(int argc, char *argv[ ]) {
         else if (strcmp(cmd, "open") == 0)
             open_file(src, dest);
         else if(strcmp(cmd, "read") == 0)
-            read_file(src,dest);
+            read_file(src, dest);
         else if(strcmp(cmd, "cat") == 0)
             cat_file(src);
         else if(strcmp(cmd, "close") == 0)

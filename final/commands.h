@@ -1,14 +1,10 @@
-/*
- * File:  commands.c 
- * By: Benjamin Poile and Lovee Baccus
- * Cpts 360 - Fall 2020
- */
 #include <libgen.h>
 #include <time.h>
 
 #include <sys/stat.h>
 
 #include "util.h"
+
 
 // Declares but does not define Global Variables for usage in main and utility functions
 extern MINODE minode[NMINODE], *root;
@@ -49,15 +45,14 @@ int link_file(char *pathname, char *linkname);
 // unlink.c
 int unlink_file(char *filename);
 
-
 //open_close_lseek.c
 int open_file(char *pathname, char *mode);
 int truncate_file(MINODE *mip);
 int close_file(int fd);
 
-//read_cat.cint 
+//read_cat.c 
 int read_file(char *fd, char *bytes);
-int myread(int fd, char*buf, int bytes, int supress_msg);
+int myread(int fd, char*buf, int bytes);
 int cat_file(char *pathname);
 
 //write.c
